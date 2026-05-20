@@ -11,13 +11,6 @@ COPY package*.json .npmrc* ./
 # We use .npmrc (legacy-peer-deps=true) but also include the flag explicitly
 RUN npm install --legacy-peer-deps
 
-# Diagnostic logs: Check if react-is is actually present
-RUN echo "--- DIAGNOSTIC START ---" && \
-    npm list react-is || true && \
-    ls -d node_modules/react-is 2>/dev/null || echo "react-is NOT found in node_modules" && \
-    ls -F node_modules/react-is/ 2>/dev/null || true && \
-    echo "--- DIAGNOSTIC END ---"
-
 # Copy source code
 COPY . .
 

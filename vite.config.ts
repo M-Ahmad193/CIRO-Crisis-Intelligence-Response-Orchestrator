@@ -9,12 +9,12 @@ export default defineConfig(() => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
-        'react-is': path.resolve(__dirname, 'node_modules/react-is'),
+        'react-is': path.resolve(__dirname, 'node_modules/react-is/index.js'),
       },
       dedupe: ['react', 'react-dom', 'react-is'],
     },
     optimizeDeps: {
-      include: ['react-is'],
+      include: ['react-is', 'recharts'],
     },
     build: {
       commonjsOptions: {

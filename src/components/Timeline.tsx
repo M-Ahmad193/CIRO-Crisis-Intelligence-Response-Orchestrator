@@ -49,7 +49,7 @@ export default function Timeline({ crisis, signals, traces }: Props) {
         )}
         {timelineItems.map((item, idx) => (
           <motion.div 
-            key={idx}
+            key={`timeline-item-${item.type}-${idx}`}
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: idx * 0.05 }}

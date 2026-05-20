@@ -12,7 +12,7 @@ import {
   AreaChart,
   Area
 } from "recharts";
-import { Brain, Cpu, Network, Zap, Info, ShieldCheck, HelpCircle, Lock, Radio } from "lucide-react";
+import { Brain, Cpu, Network, Zap, Info, ShieldCheck, HelpCircle, Lock, Radio, ArrowRight, TrendingUp, AlertTriangle } from "lucide-react";
 
 interface Props {
   crisis: Crisis;
@@ -20,7 +20,13 @@ interface Props {
 }
 
 export default function IntelligencePanel({ crisis, signals }: Props) {
-  // Mock confidence trend data based on crisis start
+  const [diagnosticComplete, setDiagnosticComplete] = React.useState(false);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDiagnosticComplete(true), 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
   const trendData = [
     { time: "T-10m", conf: 0.12 },
     { time: "T-8m", conf: 0.28 },
@@ -33,132 +39,238 @@ export default function IntelligencePanel({ crisis, signals }: Props) {
 
   return (
     <div className="h-full flex flex-col bg-bg-surface overflow-hidden relative">
-      <div className="px-4 py-3 border-b border-border-main bg-bg-secondary flex justify-between items-center shrink-0">
-        <h2 className="tech-label flex items-center gap-2">
-            <Brain size={14} className="text-blue-400" />
-            AI Reasoning Transparency
-        </h2>
-        <div className="flex gap-2">
-           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-blue-500/10 border border-blue-500/20">
-              <span className="text-[10px] font-bold text-blue-400 uppercase">AGENCY_ENABLED</span>
-           </div>
-        </div>
-      </div>
+      <AnimatePresence>
+        {!diagnosticComplete && (
+          <motion.div 
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 bg-bg-primary flex flex-col items-center justify-center p-12 text-center"
+          >
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+              className="w-16 h-16 border-2 border-blue-500/20 border-t-blue-500 rounded-full mb-8"
+            />
+            <motion.div
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ duration: 1.5 }}
+              className="w-40 h-0.5 bg-blue-500/30 rounded-full overflow-hidden"
+            >
+               <motion.div 
+                 animate={{ x: [-40, 160] }}
+                 transition={{ repeat: Infinity, duration: 1 }}
+                 className="w-10 h-full bg-blue-400"
+               />
+            </motion.div>
+            <p className="tech-label text-[10px] text-blue-400 uppercase tracking-[0.5em] mt-6 animate-pulse">Running Tactical Forensic Diagnostic...</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-6">
-        {/* Expected Output Summary */}
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-             <Radio size={14} className="text-purple-400" />
-             <h3 className="text-[10px] font-bold text-text-dim uppercase tracking-widest">Stakeholder Dispatch Reach</h3>
-          </div>
-          <div className="bg-[#1a1c1e] border border-purple-500/30 p-4 rounded-sm space-y-4 shadow-[0_0_15px_rgba(168,85,247,0.1)]">
-            <div className="space-y-3">
-               {crisis.messaging?.map((alert, i) => (
-                 <div key={i} className="flex items-start gap-3 p-2 bg-purple-500/5 border border-purple-500/20 rounded-sm">
-                   <div className="w-6 h-6 shrink-0 bg-purple-900/30 rounded-sm flex items-center justify-center">
-                     {alert.isGeoFenced ? <Lock size={12} className="text-purple-400" /> : <Radio size={12} className="text-purple-400" />}
-                   </div>
-                   <div className="flex-1 min-w-0">
-                     <div className="flex justify-between items-center mb-1">
-                        <span className="text-[9px] font-black text-purple-400 uppercase tracking-tighter">{alert.recipient}</span>
-                        {alert.isGeoFenced && (
-                          <span className="text-[8px] px-1 bg-purple-500/20 text-purple-400 rounded-sm font-bold uppercase">GEO-FENCED [{alert.radius}m]</span>
-                        )}
-                     </div>
-                     <p className="text-[10px] text-white leading-tight italic">"{alert.message}"</p>
-                   </div>
-                 </div>
-               ))}
-               {(!crisis.messaging || crisis.messaging.length === 0) && (
-                 <p className="text-[10px] text-text-dim italic">Awaiting message agent dispatch...</p>
-               )}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-16 pb-24">
+        {/* Expected Output Summary - PRIORITY SECTION */}
+        <section id="tactical-summary-priority">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="flex items-center gap-3 mb-6"
+          >
+             <div className="w-8 h-8 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+                <Brain size={18} className="text-blue-400" />
+             </div>
+             <div>
+                <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] leading-none">Cognitive Convergence Core</h3>
+                <p className="text-[9px] text-text-dim uppercase tracking-[0.3em] mt-1.5 flex items-center gap-2">
+                   <span className="w-1 h-1 rounded-full bg-green-500" />
+                   Neural Engine Protocol 4.8.2 Active
+                </p>
+             </div>
+          </motion.div>
+
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", delay: 0.6 }}
+            className="bg-gradient-to-br from-[#0a0c0e] to-[#141619] border-2 border-white/5 p-8 lg:p-10 rounded-[2.5rem] space-y-10 shadow-[0_50px_100px_rgba(0,0,0,0.8)] relative overflow-hidden group"
+          >
+            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-all duration-700 pointer-events-none group-hover:scale-110">
+               <ShieldCheck size={180} className="text-blue-500" />
             </div>
-          </div>
-        </section>
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 blur-[120px] rounded-full pointer-events-none animate-pulse" />
 
-        {/* Expected Output Summary */}
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-             <ShieldCheck size={14} className="text-green-400" />
-             <h3 className="text-[10px] font-bold text-text-dim uppercase tracking-widest">Tactical Analysis Summary</h3>
-          </div>
-          <div className="bg-[#1a1c1e] border border-blue-500/30 p-4 rounded-sm space-y-4 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
-            <div className="grid grid-cols-2 gap-4 border-b border-white/5 pb-4">
-              <div>
-                <p className="text-[8px] text-text-muted uppercase mb-1">Detected Situation</p>
-                <p className="text-sm font-bold text-white leading-tight">{crisis.reasoning?.inference || crisis.type}</p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 pb-10 border-b border-white/5 relative">
+              <div className="space-y-6">
+                <div>
+                  <div className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em] mb-4 flex items-center gap-3">
+                     <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_8px_#3b82f6]" />
+                     Situation Identity Spectrum
+                  </div>
+                  <h2 className="text-3xl lg:text-4xl font-black text-white leading-tight italic uppercase tracking-tighter drop-shadow-2xl">
+                    {crisis.reasoning?.inference || "Urban Anomaly Detection"}
+                  </h2>
+                </div>
+                
+                <div className="flex gap-6">
+                   <div className="px-5 py-3 bg-white/[0.03] border border-white/10 rounded-2xl backdrop-blur-2xl">
+                      <p className="text-[8px] text-text-muted uppercase tracking-[0.2em] mb-1.5">Priority</p>
+                      <span className={`text-xs font-black uppercase tracking-widest ${crisis.severity === 'CRITICAL' ? 'text-red-500 drop-shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'text-amber-500'}`}>
+                         {crisis.severity} THREAT
+                      </span>
+                   </div>
+                   <div className="px-5 py-3 bg-white/[0.03] border border-white/10 rounded-2xl backdrop-blur-2xl">
+                      <p className="text-[8px] text-text-muted uppercase tracking-[0.2em] mb-1.5">Vector Envelope</p>
+                      <span className="text-xs font-black text-white uppercase tracking-widest">{crisis.radius}m Radius</span>
+                   </div>
+                </div>
               </div>
-              <div>
-                <p className="text-[8px] text-text-muted uppercase mb-1">Confidence</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-[14px] font-black text-blue-400">{(crisis.confidence * 100).toFixed(0)}%</span>
-                  <span className="text-[9px] px-1.5 py-0.5 bg-blue-500/10 text-blue-400 rounded-sm font-bold">HIGH</span>
+
+              <div className="flex flex-col lg:items-end justify-center">
+                <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] mb-6">Model Convergence Confidence</p>
+                <div className="flex items-center gap-6 bg-white/[0.02] p-6 rounded-[2rem] border border-white/5">
+                   <div className="flex gap-2">
+                      {[1,2,3,4,5,6,7,8,9,10].map(i => (
+                        <motion.div 
+                          initial={{ height: 4, opacity: 0.2 }}
+                          animate={{ 
+                            height: i <= (crisis.confidence * 10) ? 32 : 8,
+                            opacity: i <= (crisis.confidence * 10) ? 1 : 0.2
+                          }}
+                          transition={{ delay: 0.8 + (i * 0.05), type: "spring", stiffness: 300 }}
+                          key={`confidence-gauge-${i}`} 
+                          className={`w-2.5 rounded-full ${i <= (crisis.confidence * 10) ? 'bg-gradient-to-t from-blue-600 to-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.6)]' : 'bg-white'}`} 
+                        />
+                      ))}
+                   </div>
+                   <div className="text-right">
+                      <span className="text-5xl font-black text-white tracking-tighter tabular-nums italic">{(crisis.confidence * 100).toFixed(0)}<span className="text-xl text-blue-500 font-mono">%</span></span>
+                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-12 relative">
               <div>
-                <p className="text-[8px] font-black text-red-400 uppercase tracking-tighter mb-1.5">Impact Vector</p>
-                <div className="space-y-1">
-                  {crisis.reasoning?.explanation.split(',').map((line, i) => (
-                    <p key={i} className="text-[11px] text-text-main flex items-start gap-2 italic">
-                      <span className="text-red-500">•</span> {line.trim()}
-                    </p>
+                <p className="text-[10px] font-black text-red-500 uppercase tracking-[0.4em] mb-6 flex items-center gap-3">
+                  <AlertTriangle size={16} className="animate-pulse" />
+                  Tactical Impact Matrix
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(crisis.reasoning?.explanation.includes(',') ? crisis.reasoning.explanation.split(',') : ['Traffic infrastructure critical fail', 'Thermal signatures rising']).map((line, i) => (
+                    <motion.div 
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 1 + (i * 0.1) }}
+                      whileHover={{ scale: 1.02, x: 5 }}
+                      key={`impact-line-${i}`} 
+                      className="px-6 py-5 bg-red-600/5 border border-red-500/20 rounded-2xl flex items-center gap-5 hover:bg-red-600/10 hover:border-red-500/40 transition-all duration-300 cursor-default group/item"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500 border border-red-500/20 group-hover/item:rotate-12 transition-transform shadow-[0_0_20px_rgba(239,68,68,0.1)]">
+                         <Zap size={20} />
+                      </div>
+                      <p className="text-sm font-black text-white uppercase italic tracking-tight leading-tight">{line.trim()}</p>
+                    </motion.div>
                   ))}
-                  {/* Default fallback if explanation doesn't match expected split */}
-                  {(!crisis.reasoning?.explanation.includes(',') && crisis.type === 'FLOOD') && (
-                    <>
-                      <p className="text-[11px] text-text-main flex items-start gap-2 italic">
-                        <span className="text-red-500">•</span> Traffic blocked
-                      </p>
-                      <p className="text-[11px] text-text-main flex items-start gap-2 italic">
-                        <span className="text-red-500">•</span> Vehicles stranded
-                      </p>
-                    </>
-                  )}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-[8px] font-black text-blue-400 uppercase tracking-tighter mb-1.5">Recommended Actions</p>
-                  <ul className="space-y-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em] flex items-center gap-3">
+                     <TrendingUp size={16} />
+                     Strategic Recommendations
+                  </p>
+                  <div className="space-y-4">
                     {crisis.recommendations?.map((rec, i) => (
-                      <li key={i} className="text-[10px] text-text-dim flex items-start gap-1.5">
-                        <span className="text-blue-500">-</span> {rec}
-                      </li>
+                      <motion.div 
+                        key={`recommendation-${i}`} 
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 1.2 + (i * 0.1) }}
+                        className="flex items-start gap-5 group p-4 border border-white/5 rounded-2xl hover:bg-white/[0.02] transition-all"
+                      >
+                        <div className="mt-1 w-6 h-6 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0 border border-blue-500/20 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                           <ArrowRight size={12} className="text-blue-500 group-hover:text-inherit" />
+                        </div>
+                        <p className="text-[13px] text-text-dim font-bold group-hover:text-white transition-colors leading-relaxed italic">{rec}</p>
+                      </motion.div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[8px] font-black text-amber-400 uppercase tracking-tighter mb-1.5">Execution Plan</p>
-                  <ul className="space-y-1">
-                    <li className="text-[10px] text-text-dim flex items-start gap-1.5">
-                      <span className="text-amber-500">-</span> Route updated on map
-                    </li>
-                    <li className="text-[10px] text-text-dim flex items-start gap-1.5">
-                      <span className="text-amber-500">-</span> Alert sent to users
-                    </li>
-                    <li className="text-[10px] text-text-dim flex items-start gap-1.5">
-                      <span className="text-amber-500">-</span> Emergency ticket created
-                    </li>
-                  </ul>
+                
+                <div className="space-y-6">
+                  <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.4em]">Autonomous Deployment Rails</p>
+                  <div className="space-y-5 bg-white/[0.02] border border-white/5 p-6 rounded-[2rem] backdrop-blur-xl">
+                     {[
+                       { label: "Neural Topology Update", status: "SYNCED", color: "text-blue-400" },
+                       { label: "Kinetic Signal Burst", status: "ACTIVE", color: "text-amber-400 animate-pulse" },
+                       { label: "Vector Guardrails", status: "LOCKING", color: "text-text-muted" }
+                     ].map((item, i) => (
+                       <div key={`status-item-${i}`} className="flex items-center justify-between gap-6">
+                         <div className="flex items-center gap-4">
+                            <div className={`w-2 h-2 rounded-full ${item.status === 'SYNCED' ? 'bg-blue-500 shadow-[0_0_8px_#3b82f6]' : 'bg-white/10'}`} />
+                            <p className="text-[11px] text-text-dim font-black uppercase tracking-widest">{item.label}</p>
+                         </div>
+                         <span className={`text-[9px] font-black tracking-[0.2em] px-2 py-0.5 border border-current/20 rounded ${item.color}`}>{item.status}</span>
+                       </div>
+                     ))}
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="pt-3 border-t border-white/5 flex items-center justify-between">
-                <span className="text-[9px] font-bold text-text-muted uppercase">Outcome Prediction</span>
-                <span className="text-[10px] font-black text-green-500 underline decoration-green-500/30 underline-offset-4">
-                  REDUCED CONGESTION IN SIMULATION
-                </span>
+            <div className="pt-10 border-t border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-8">
+                <div className="space-y-3 flex-1">
+                  <p className="text-[9px] font-black text-text-muted uppercase tracking-[0.4em]">Projected Urban Stabilization</p>
+                  <div className="flex items-center gap-6">
+                     <span className="text-3xl font-black text-green-500 font-mono italic">-34<span className="text-sm ml-1">%</span></span>
+                     <div className="h-2 flex-1 bg-white/5 rounded-full overflow-hidden p-0.5">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: "68%" }}
+                          transition={{ duration: 2.5, ease: "easeOut", delay: 1.5 }}
+                          className="h-full bg-gradient-to-r from-green-600 to-green-400 rounded-full shadow-[0_0_20px_#22c55e]" 
+                        />
+                     </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 px-6 py-4 bg-green-500/10 border border-green-500/20 rounded-2xl shadow-[0_0_30px_rgba(34,197,94,0.1)]">
+                   <ShieldCheck size={24} className="text-green-500" />
+                   <div className="leading-tight">
+                      <p className="text-xs font-black text-white uppercase tracking-tight">Security Lock</p>
+                      <p className="text-[8px] text-green-500/60 font-mono uppercase tracking-[0.3em]">Integrity: VERIFIED_OPS</p>
+                   </div>
+                </div>
             </div>
+          </motion.div>
+        </section>
+
+        {/* Tactical Reasoning Terminal Overlay */}
+        <section>
+          <div className="bg-black/40 border border-white/5 rounded-3xl p-6 font-mono overflow-hidden relative group">
+             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <Cpu size={40} className="text-blue-500" />
+             </div>
+             <p className="text-[10px] text-blue-500/60 mb-4 animate-pulse">Neural_Reasoning_Trace &gt; Initializing...</p>
+             <div className="space-y-2 text-[11px] leading-relaxed">
+                <p className="text-text-dim"><span className="text-blue-400 mr-2">[0.00ms]</span> Aggregating city-wide sensor telemetry...</p>
+                <p className="text-text-dim"><span className="text-blue-400 mr-2">[0.12ms]</span> Cross-referencing vector patterns with historical datasets...</p>
+                <p className="text-white font-bold"><span className="text-blue-400 mr-2">[0.45ms]</span> Pattern Match: {crisis.title} identified with { (crisis.confidence * 100).toFixed(0) }% reliability.</p>
+                <p className="text-text-dim"><span className="text-blue-400 mr-2">[1.02ms]</span> Optimizing emergency unit deployment routes...</p>
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                  className="text-green-400 font-bold"
+                >
+                  <span className="text-blue-400 mr-2">[1.20ms]</span> TARGET_STABILIZATION_PROTOCOL_ENGAGED
+                </motion.p>
+             </div>
           </div>
         </section>
 
-        {/* Почему это решение? - Rename and add Credibility */}
+        {/* Signal Credibility Audit */}
         <section>
           <div className="flex items-center gap-2 mb-3">
              <ShieldCheck size={14} className="text-blue-400" />
@@ -300,7 +412,7 @@ export default function IntelligencePanel({ crisis, signals }: Props) {
                         const x = Math.cos(angle) * 70;
                         const y = Math.sin(angle) * 35;
                         return (
-                          <React.Fragment key={i}>
+                          <React.Fragment key={`sig-node-${i}`}>
                             <div 
                                 className="absolute w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/50 z-20 flex items-center justify-center"
                                 style={{ left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)`, transform: 'translate(-50%, -50%)' }}
