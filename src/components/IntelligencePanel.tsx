@@ -1,6 +1,6 @@
 import React from "react";
 import { Crisis, Signal } from "../../server/types";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { 
   LineChart, 
   Line, 
@@ -10,9 +10,14 @@ import {
   Tooltip, 
   ResponsiveContainer,
   AreaChart,
-  Area
+  Area,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
 } from "recharts";
-import { Brain, Cpu, Network, Zap, Info, ShieldCheck, HelpCircle, Lock, Radio, ArrowRight, TrendingUp, AlertTriangle } from "lucide-react";
+import { Brain, Cpu, Network, Zap, Info, ShieldCheck, HelpCircle, Lock, Radio, ArrowRight, TrendingUp, AlertTriangle, Activity, Target } from "lucide-react";
 
 interface Props {
   crisis: Crisis;
@@ -36,6 +41,14 @@ export default function IntelligencePanel({ crisis, signals }: Props) {
   ];
 
   const relatedSignals = signals.filter(s => crisis.signals.includes(s.id));
+
+  const radarData = [
+    { subject: 'Impact', A: (crisis.severity === 'CRITICAL' ? 95 : 70), B: 60, fullMark: 100 },
+    { subject: 'Velocity', A: 85, B: 40, fullMark: 100 },
+    { subject: 'Density', A: (crisis.affectedPopulation / 1000) > 100 ? 95 : (crisis.affectedPopulation / 1000) || 45, B: 50, fullMark: 100 },
+    { subject: 'Stability', A: 25, B: 75, fullMark: 100 },
+    { subject: 'Confidence', A: crisis.confidence * 100, B: 80, fullMark: 100 },
+  ];
 
   return (
     <div className="h-full flex flex-col bg-bg-surface overflow-hidden relative">
@@ -391,109 +404,190 @@ export default function IntelligencePanel({ crisis, signals }: Props) {
           </div>
         </section>
 
-        {/* Signal Relationship Graph */}
+        {/* Diagnostic Vector Matrix - REVAMPED INFOGRAPHIC */}
         <section>
-           <div className="flex items-center gap-2 mb-3">
-             <Network size={14} className="text-purple-400" />
-             <h3 className="text-[10px] font-bold text-text-dim uppercase tracking-widest">Signal Linkage Graph</h3>
-          </div>
-          <div className="space-y-4">
-             <div className="flex flex-col gap-4 bg-bg-tertiary border border-border-main p-4 rounded-sm relative overflow-hidden">
-                <div className="flex items-center justify-center py-4 relative">
-                  <div className="relative w-full max-w-[200px] h-[100px]">
-                    {/* Root node */}
-                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-red-500/20 border border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)] z-20 flex items-center justify-center">
-                      <HelpCircle size={16} className="text-red-500" />
+           <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(168,85,247,0.2)]">
+                <Network size={18} className="text-purple-400" />
+              </div>
+              <div>
+                 <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] leading-none">Diagnostic Vector Matrix</h3>
+                 <p className="text-[9px] text-text-dim uppercase tracking-[0.3em] mt-1.5 font-mono">Multi-Point Evidence Correlation</p>
+              </div>
+           </div>
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* RADAR CHART */}
+              <div className="bg-bg-tertiary/40 border border-white/5 p-8 rounded-[2rem] relative overflow-hidden backdrop-blur-xl">
+                 <div className="absolute top-4 left-6">
+                    <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest flex items-center gap-2">
+                       <Activity size={12} />
+                       Threat Signature
+                    </p>
+                 </div>
+                 <div className="h-[280px] w-full flex items-center justify-center pt-6">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                        <PolarGrid stroke="#ffffff10" />
+                        <PolarAngleAxis 
+                          dataKey="subject" 
+                          tick={{ fill: "#ffffff40", fontSize: 10, fontWeight: 900 }} 
+                        />
+                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                        <Radar
+                          name="Current"
+                          dataKey="A"
+                          stroke="#a855f7"
+                          fill="#a855f7"
+                          fillOpacity={0.4}
+                          strokeWidth={2}
+                        />
+                        <Radar
+                          name="Baseline"
+                          dataKey="B"
+                          stroke="#3b82f6"
+                          fill="#3b82f6"
+                          fillOpacity={0.1}
+                          strokeWidth={1}
+                        />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                 </div>
+                 <div className="grid grid-cols-3 gap-4 pt-6 border-t border-white/5">
+                    <div className="text-center">
+                       <p className="text-[8px] text-text-muted uppercase mb-1">Spread</p>
+                       <p className="text-sm font-black text-white">LOW</p>
                     </div>
+                    <div className="text-center border-x border-white/5">
+                       <p className="text-[8px] text-text-muted uppercase mb-1">Trend</p>
+                       <p className="text-sm font-black text-purple-400 font-mono">ASC_04</p>
+                    </div>
+                    <div className="text-center">
+                       <p className="text-[8px] text-text-muted uppercase mb-1">Priority</p>
+                       <p className="text-sm font-black text-red-500 italic">MAX</p>
+                    </div>
+                 </div>
+              </div>
+
+              {/* NODE MESH */}
+              <div className="bg-bg-tertiary/40 border border-white/5 p-8 rounded-[2rem] flex flex-col relative overflow-hidden backdrop-blur-xl">
+                 <div className="absolute top-4 left-6">
+                    <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-2">
+                       <Target size={12} />
+                       Evidence Mesh
+                    </p>
+                 </div>
+                 
+                 <div className="flex-1 flex items-center justify-center py-10 relative">
+                    <div className="absolute inset-0 bg-[radial-gradient(#ffffff10_1px,transparent_1px)] bg-[size:24px_24px] opacity-20" />
                     
-                    {/* Signal nodes */}
-                    {relatedSignals.map((_, i) => {
-                        const angle = (i / relatedSignals.length) * Math.PI * 2;
-                        const x = Math.cos(angle) * 70;
-                        const y = Math.sin(angle) * 35;
-                        return (
-                          <React.Fragment key={`sig-node-${i}`}>
-                            <div 
-                                className="absolute w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/50 z-20 flex items-center justify-center"
-                                style={{ left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)`, transform: 'translate(-50%, -50%)' }}
-                            >
-                                <Zap size={10} className="text-blue-400" />
-                            </div>
-                            <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
-                                <line 
-                                  x1="50%" y1="50%" 
-                                  x2={`calc(50% + ${x}px)`} y2={`calc(50% + ${y}px)`} 
-                                  stroke="#3b82f6" strokeWidth="1" strokeDasharray="4 2" className="opacity-30"
-                                />
-                            </svg>
-                          </React.Fragment>
-                        )
-                    })}
-                  </div>
-                </div>
-
-                {/* Legend - Responsive layout */}
-                <div className="flex flex-wrap gap-x-4 gap-y-2 pt-4 border-t border-border-main/30">
-                   <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]" />
-                      <span className="text-[8px] text-text-muted uppercase font-bold tracking-wider">Root Anomaly</span>
-                   </div>
-                   <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_#3b82f6]" />
-                      <span className="text-[8px] text-text-muted uppercase font-bold tracking-wider">Evidence Node</span>
-                   </div>
-                   <div className="flex items-center gap-2">
-                      <div className="w-4 h-0.5 bg-blue-500 opacity-30 border-t border-dashed" />
-                      <span className="text-[8px] text-text-muted uppercase font-bold tracking-wider">Causal Link</span>
-                   </div>
-                </div>
-             </div>
-             
-             {/* Social Media Sentiment Insight */}
-             <div className="bg-bg-tertiary border border-border-main p-4 rounded-sm space-y-4 mb-4">
-                <div className="flex justify-between items-end mb-1">
-                   <span className="text-[9px] font-mono text-text-dim">SENTIMENT_POLARITY</span>
-                   <span className="text-xs font-black text-red-500">-0.68</span>
-                </div>
-                <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden flex">
-                   <div className="h-full bg-red-500" style={{ width: '68%' }} />
-                   <div className="h-full bg-white/20" style={{ width: '32%' }} />
-                </div>
-                <div className="grid grid-cols-2 gap-4 pt-2">
-                   <div className="space-y-1">
-                      <p className="text-[7px] text-text-muted uppercase">Primary Emotion</p>
-                      <p className="text-[10px] font-black text-white italic">URGENCY / PANIC</p>
-                   </div>
-                   <div className="space-y-1">
-                      <p className="text-[7px] text-text-muted uppercase">Viral Velocity</p>
-                      <p className="text-[10px] font-black text-blue-400">+142% p/h</p>
-                   </div>
-                </div>
-                <div className="pt-3 border-t border-white/5">
-                   <p className="text-[8px] text-text-dim uppercase mb-2 font-black tracking-widest">Entity Extraction</p>
-                   <div className="flex flex-wrap gap-2">
-                      {["Flood", "Help", "Mall Road", "Rescue", "Power Out"].map(tag => (
-                        <span key={tag} className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[8px] font-bold text-blue-400 uppercase">{tag}</span>
-                      ))}
-                   </div>
-                </div>
-             </div>
-
-             {/* Signal Detail List */}
-             <div className="space-y-2">
-                {relatedSignals.map((s) => (
-                  <div key={s.id} className="flex items-center gap-3 p-2 bg-bg-tertiary border border-border-main/50 rounded-sm">
-                    <div className="w-6 h-6 shrink-0 bg-blue-900/30 rounded-sm flex items-center justify-center border border-blue-500/20">
-                       <Zap size={10} className="text-blue-400" />
+                    <div className="relative w-full max-w-[280px] h-[180px]">
+                      <motion.div 
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ repeat: Infinity, duration: 3 }}
+                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-red-600/20 border-2 border-red-500 shadow-[0_0_40px_rgba(239,68,68,0.4)] z-20 flex items-center justify-center backdrop-blur-md"
+                      >
+                        <div className="text-center">
+                           <HelpCircle size={24} className="text-red-500 mx-auto" />
+                           <p className="text-[8px] font-black text-red-500 uppercase tracking-tighter mt-1">Primary</p>
+                        </div>
+                      </motion.div>
+                      
+                      {relatedSignals.map((_, i) => {
+                          const angle = (i / relatedSignals.length) * Math.PI * 2;
+                          const x = Math.cos(angle) * 110;
+                          const y = Math.sin(angle) * 70;
+                          return (
+                            <React.Fragment key={`sig-node-mesh-${i}`}>
+                              <motion.div 
+                                  initial={{ opacity: 0, scale: 0 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{ delay: 1.5 + (i * 0.1) }}
+                                  className="absolute w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/40 z-20 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all cursor-crosshair group/node"
+                                  style={{ left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)`, transform: 'translate(-50%, -50%)' }}
+                              >
+                                  <Zap size={14} className="text-blue-400 group-hover/node:text-inherit" />
+                                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/80 border border-white/10 rounded text-[7px] font-mono whitespace-nowrap opacity-0 group-hover/node:opacity-100 transition-opacity">
+                                     NODE_CONF: {(Math.random() * 20 + 80).toFixed(0)}%
+                                  </div>
+                              </motion.div>
+                              <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
+                                  <motion.line 
+                                    initial={{ pathLength: 0, opacity: 0 }}
+                                    animate={{ pathLength: 1, opacity: 0.4 }}
+                                    transition={{ duration: 1, delay: 2 }}
+                                    x1="50%" y1="50%" 
+                                    x2={`calc(50% + ${x}px)`} y2={`calc(50% + ${y}px)`} 
+                                    stroke="#3b82f6" strokeWidth="2" strokeDasharray="6 4"
+                                  />
+                              </svg>
+                            </React.Fragment>
+                          )
+                      })}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-white truncate">{s.content}</p>
-                      <p className="text-[8px] text-text-dim uppercase tracking-tighter">Correlation Weight: {(s.confidence * 100).toFixed(0)}%</p>
+                 </div>
+
+                 <div className="pt-6 border-t border-white/5">
+                    <div className="flex items-center justify-between text-[10px] font-black uppercase text-text-muted italic tracking-widest">
+                       <span>Nodes Connected</span>
+                       <span className="text-white">{relatedSignals.length} Active Sensors</span>
                     </div>
-                  </div>
-                ))}
-             </div>
-          </div>
+                 </div>
+              </div>
+           </div>
+
+           {/* SOCIAL MEDIA SENTIMENT REFINEMENT */}
+           <div className="mt-8 bg-gradient-to-r from-blue-900/10 to-purple-900/10 border border-white/5 p-8 rounded-[2rem] backdrop-blur-2xl grid grid-cols-1 md:grid-cols-3 gap-10">
+              <div className="space-y-4">
+                 <div className="flex justify-between items-end mb-2">
+                    <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Social Volatility</span>
+                    <span className="text-xl font-black text-white italic">74.8<span className="text-[10px] ml-1 text-text-dim">/100</span></span>
+                 </div>
+                 <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden flex shadow-inner">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: "74.8%" }}
+                      transition={{ duration: 2, delay: 2 }}
+                      className="h-full bg-gradient-to-r from-blue-600 to-purple-600 shadow-[0_0_10px_rgba(168,85,247,0.5)]" 
+                    />
+                 </div>
+                 <p className="text-[9px] text-text-dim uppercase tracking-widest italic text-center">Protocol: Sentiment_Extraction_v9</p>
+              </div>
+
+              <div className="flex flex-col justify-center border-x border-white/5 px-10">
+                 <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                       <span className="text-[9px] font-black text-text-dim uppercase">Extraction</span>
+                       <span className="text-[9px] font-mono text-green-500 font-bold">STABLE</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                       {["Flood", "Help", "Mall Road", "Rescue", "No Power"].map((tag, i) => (
+                         <motion.span 
+                           initial={{ opacity: 0, scale: 0.8 }}
+                           animate={{ opacity: 1, scale: 1 }}
+                           transition={{ delay: 2.2 + (i * 0.1) }}
+                           key={tag} 
+                           className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-black text-white uppercase tracking-tighter"
+                         >
+                           {tag}
+                         </motion.span>
+                       ))}
+                    </div>
+                 </div>
+              </div>
+
+              <div className="flex flex-col justify-center space-y-4">
+                 <div className="flex items-center gap-4">
+                    <div className="flex-1 p-4 bg-red-600/10 border border-red-500/20 rounded-2xl text-center">
+                       <p className="text-[8px] text-red-400 uppercase font-black mb-1">Emotion Core</p>
+                       <p className="text-xs font-black text-white uppercase tracking-tighter">Extreme Panic</p>
+                    </div>
+                    <div className="flex-1 p-4 bg-blue-600/10 border border-blue-500/20 rounded-2xl text-center">
+                       <p className="text-[8px] text-blue-400 uppercase font-black mb-1">Growth Rate</p>
+                       <p className="text-xs font-black text-white">+288% p/h</p>
+                    </div>
+                 </div>
+              </div>
+           </div>
         </section>
 
       </div>
