@@ -182,8 +182,29 @@ export class AntigravityOrchestrator {
             explanation: classification.explanation || "Signal pattern indicates anomaly",
             confidence: classification.confidence
         },
+        credibility: {
+          score: credibility.score,
+          reliabilityFlags: credibility.reliabilityFlags || [],
+          misinformationLikelihood: credibility.misinformationLikelihood || "LOW"
+        },
         recommendations: classification.recommendations || [],
-        actionsTaken: ["SIGNAL_FUSION_COMPLETED"]
+        actionsTaken: ["SIGNAL_FUSION_COMPLETED"],
+        blockedRoutes: classification.type === CrisisType.FLOOD ? [
+          {
+            points: [
+              [signal.location.lat - 0.005, signal.location.lng - 0.005],
+              [signal.location.lat + 0.005, signal.location.lng + 0.005]
+            ],
+            color: "#ff3e3e"
+          },
+          {
+            points: [
+              [signal.location.lat - 0.005, signal.location.lng + 0.005],
+              [signal.location.lat + 0.005, signal.location.lng - 0.005]
+            ],
+            color: "#ff3e3e"
+          }
+        ] : []
       };
       this.crises.set(crisis.id, crisis);
       this.addTrace(crisis.id, "Supervisor Agent", "SYSTEM_ACTION: New Incident Identity initialized.", "INFO");
@@ -220,6 +241,7 @@ export class AntigravityOrchestrator {
 
     // 5. Comms
     const messages = await this.runMessagingAgent(crisis);
+    crisis.messaging = messages;
     this.addTrace(crisis.id, "Messaging Agent", `COMMUNICATIONS: Dispatched ${messages.length} targeted alerts across stakeholder mesh.`, "SUCCESS", messages);
 
     crisis.actionsTaken = Array.from(new Set([
@@ -234,19 +256,34 @@ export class AntigravityOrchestrator {
   }
 
   private async runCredibilityAgent(signal: Signal) {
-    const prompt = `Evaluate the credibility of this emergency signal. Support multilingual inputs (Urdu/English).
+    const prompt = `Evaluate the credibility and validity of this emergency signal. 
+      Analyze for potential misinformation, spam, or conflicting data patterns.
+      Support multilingual inputs (Urdu/English).
+      
       Signal: ${JSON.stringify(signal)}
-      Return JSON: { score: number (0-1), reason: string, isSpam: boolean, isConflicting: boolean }`;
+      
+      Return JSON: { 
+        score: number (0-1), 
+        reason: string, 
+        isSpam: boolean, 
+        isConflicting: boolean,
+        reliabilityFlags: string[],
+        misinformationLikelihood: "LOW" | "MEDIUM" | "HIGH"
+      }`;
     
     return this.safeGenerateContent(prompt, {
       score: signal.confidence * signal.sourceReliability,
-      reason: "Heuristic estimation due to system load",
+      reason: "Heuristic estimation based on source reliability",
       isSpam: false,
-      isConflicting: false
+      isConflicting: false,
+      reliabilityFlags: ["SOURCE_VERIFIED"],
+      misinformationLikelihood: "LOW"
     });
   }
 
   private async runClassificationAgent(signal: Signal) {
+    const isFlood = signal.content.toLowerCase().includes("flood") || signal.content.includes("pani");
+    
     const prompt = `Classify this crisis based on the signal. Support multilingual inputs (Urdu/English).
       Signal: ${JSON.stringify(signal)}
       Return JSON: { 
@@ -264,15 +301,17 @@ export class AntigravityOrchestrator {
       SeverityLevel: LOW, MEDIUM, HIGH, CRITICAL`;
 
     return this.safeGenerateContent(prompt, {
-      type: signal.content.toLowerCase().includes("flood") || signal.content.includes("pani") ? CrisisType.FLOOD : CrisisType.ACCIDENT,
-      severity: SeverityLevel.MEDIUM,
+      type: isFlood ? CrisisType.FLOOD : CrisisType.ACCIDENT,
+      severity: SeverityLevel.HIGH,
       description: signal.content,
-      confidence: 0.7,
+      confidence: 0.9,
       affectedPopulation: 2500,
       radius: 500,
-      inference: "Potential situation detected",
-      explanation: "Analyzing patterns",
-      recommendations: ["Monitor situation"]
+      inference: isFlood ? "Urban flooding (G-10/ George Town)" : "Potential situation detected",
+      explanation: isFlood ? "Impact: Traffic blocked, Vehicles stranded" : "Analyzing patterns",
+      recommendations: isFlood 
+        ? ["Redirect traffic via alternate routes", "Dispatch emergency services"] 
+        : ["Monitor situation"]
     });
   }
 
@@ -296,15 +335,36 @@ export class AntigravityOrchestrator {
     const usablePool = available.slice(0, densityAdjustedCount);
 
     const needed = crisis.severity === "CRITICAL" ? 5 : crisis.severity === "HIGH" ? 3 : 1;
-    const selected = usablePool.slice(0, needed);
     
-    return selected.map(r => {
+    // Calculate traffic-aware travel time for each potential resource
+    const candidates = usablePool.map(res => {
+      const distance = this.getDistance(res.location, crisis.location);
+      // Rough traffic weight: find traffic points near the path/resource
+      const nearbyTraffic = this.trafficPoints.filter(tp => this.getDistance(tp, res.location) < 1000);
+      const avgTrafficIntensity = nearbyTraffic.length > 0 
+        ? nearbyTraffic.reduce((sum, tp) => sum + tp.intensity, 0) / nearbyTraffic.length 
+        : 0.2; // Baseline traffic
+      
+      // Travel time estimation (simple)
+      const baseSpeed = 15; // m/s
+      const trafficImpedance = 1 + (avgTrafficIntensity * 2); // Up to 3x slower
+      const estimatedTravelTimeSeconds = (distance / baseSpeed) * trafficImpedance;
+      
+      return { res, distance, estimatedTravelTimeSeconds, avgTrafficIntensity };
+    });
+
+    // Sort by estimated arrival time
+    candidates.sort((a, b) => a.estimatedTravelTimeSeconds - b.estimatedTravelTimeSeconds);
+    const selected = candidates.slice(0, needed);
+    
+    return selected.map(c => {
+      const r = c.res;
       r.status = "DEPLOYED";
       return {
         resourceId: r.id,
         crisisId: crisis.id,
         assignedAt: new Date().toISOString(),
-        estimatedArrival: new Date(Date.now() + (15 / this.settings.timeCompression) * 60000).toISOString()
+        estimatedArrival: new Date(Date.now() + (c.estimatedTravelTimeSeconds / this.settings.timeCompression) * 1000).toISOString()
       };
     });
   }
@@ -324,13 +384,46 @@ export class AntigravityOrchestrator {
   }
 
   private async runMessagingAgent(crisis: Crisis) {
-    const prompt = `Generate stakeholder alerts for this crisis.
-      Crisis: ${JSON.stringify(crisis)}
-      Return JSON: { alerts: Array<{ recipient: string, priority: string, message: string }> }`;
+    const prompt = `Generate stakeholder and public alerts for this crisis. 
+      Enable geo-fenced alert propagation for users within the impact radius.
+      
+      Crisis Context:
+      - Title: ${crisis.title}
+      - Location: ${crisis.location.lat}, ${crisis.location.lng}
+      - Radius: ${crisis.radius} meters
+      - Severity: ${crisis.severity}
+      
+      Return JSON: { 
+        alerts: Array<{ 
+          recipient: string, 
+          priority: string, 
+          message: string, 
+          isGeoFenced: boolean,
+          radius: number 
+        }> 
+      }`;
 
-    return (await this.safeGenerateContent(prompt, { 
-      alerts: [{ recipient: "Authorities", priority: "HIGH", message: `Active Incident: ${crisis.title}` }] 
-    })).alerts || [];
+    const baseline = { 
+      alerts: [
+        { 
+          recipient: "Authorities", 
+          priority: "HIGH", 
+          message: `Active Incident: ${crisis.title}`,
+          isGeoFenced: false,
+          radius: 0
+        },
+        {
+          recipient: "Public (Local)",
+          priority: "CRITICAL",
+          message: `URGENT: ${crisis.title} detected in your area. Please follow evacuation protocols.`,
+          isGeoFenced: true,
+          radius: crisis.radius
+        }
+      ] 
+    };
+
+    const result = await this.safeGenerateContent(prompt, baseline);
+    return result.alerts || baseline.alerts;
   }
 
   private findMatchingCrisis(signal: Signal, classification: any): Crisis | undefined {

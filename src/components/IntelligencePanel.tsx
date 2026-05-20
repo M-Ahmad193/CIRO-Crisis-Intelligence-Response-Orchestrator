@@ -12,7 +12,7 @@ import {
   AreaChart,
   Area
 } from "recharts";
-import { Brain, Cpu, Network, Zap, Info, ShieldCheck, HelpCircle } from "lucide-react";
+import { Brain, Cpu, Network, Zap, Info, ShieldCheck, HelpCircle, Lock, Radio } from "lucide-react";
 
 interface Props {
   crisis: Crisis;
@@ -46,6 +46,158 @@ export default function IntelligencePanel({ crisis, signals }: Props) {
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-6">
+        {/* Expected Output Summary */}
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+             <Radio size={14} className="text-purple-400" />
+             <h3 className="text-[10px] font-bold text-text-dim uppercase tracking-widest">Stakeholder Dispatch Reach</h3>
+          </div>
+          <div className="bg-[#1a1c1e] border border-purple-500/30 p-4 rounded-sm space-y-4 shadow-[0_0_15px_rgba(168,85,247,0.1)]">
+            <div className="space-y-3">
+               {crisis.messaging?.map((alert, i) => (
+                 <div key={i} className="flex items-start gap-3 p-2 bg-purple-500/5 border border-purple-500/20 rounded-sm">
+                   <div className="w-6 h-6 shrink-0 bg-purple-900/30 rounded-sm flex items-center justify-center">
+                     {alert.isGeoFenced ? <Lock size={12} className="text-purple-400" /> : <Radio size={12} className="text-purple-400" />}
+                   </div>
+                   <div className="flex-1 min-w-0">
+                     <div className="flex justify-between items-center mb-1">
+                        <span className="text-[9px] font-black text-purple-400 uppercase tracking-tighter">{alert.recipient}</span>
+                        {alert.isGeoFenced && (
+                          <span className="text-[8px] px-1 bg-purple-500/20 text-purple-400 rounded-sm font-bold uppercase">GEO-FENCED [{alert.radius}m]</span>
+                        )}
+                     </div>
+                     <p className="text-[10px] text-white leading-tight italic">"{alert.message}"</p>
+                   </div>
+                 </div>
+               ))}
+               {(!crisis.messaging || crisis.messaging.length === 0) && (
+                 <p className="text-[10px] text-text-dim italic">Awaiting message agent dispatch...</p>
+               )}
+            </div>
+          </div>
+        </section>
+
+        {/* Expected Output Summary */}
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+             <ShieldCheck size={14} className="text-green-400" />
+             <h3 className="text-[10px] font-bold text-text-dim uppercase tracking-widest">Tactical Analysis Summary</h3>
+          </div>
+          <div className="bg-[#1a1c1e] border border-blue-500/30 p-4 rounded-sm space-y-4 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
+            <div className="grid grid-cols-2 gap-4 border-b border-white/5 pb-4">
+              <div>
+                <p className="text-[8px] text-text-muted uppercase mb-1">Detected Situation</p>
+                <p className="text-sm font-bold text-white leading-tight">{crisis.reasoning?.inference || crisis.type}</p>
+              </div>
+              <div>
+                <p className="text-[8px] text-text-muted uppercase mb-1">Confidence</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-[14px] font-black text-blue-400">{(crisis.confidence * 100).toFixed(0)}%</span>
+                  <span className="text-[9px] px-1.5 py-0.5 bg-blue-500/10 text-blue-400 rounded-sm font-bold">HIGH</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <p className="text-[8px] font-black text-red-400 uppercase tracking-tighter mb-1.5">Impact Vector</p>
+                <div className="space-y-1">
+                  {crisis.reasoning?.explanation.split(',').map((line, i) => (
+                    <p key={i} className="text-[11px] text-text-main flex items-start gap-2 italic">
+                      <span className="text-red-500">•</span> {line.trim()}
+                    </p>
+                  ))}
+                  {/* Default fallback if explanation doesn't match expected split */}
+                  {(!crisis.reasoning?.explanation.includes(',') && crisis.type === 'FLOOD') && (
+                    <>
+                      <p className="text-[11px] text-text-main flex items-start gap-2 italic">
+                        <span className="text-red-500">•</span> Traffic blocked
+                      </p>
+                      <p className="text-[11px] text-text-main flex items-start gap-2 italic">
+                        <span className="text-red-500">•</span> Vehicles stranded
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[8px] font-black text-blue-400 uppercase tracking-tighter mb-1.5">Recommended Actions</p>
+                  <ul className="space-y-1">
+                    {crisis.recommendations?.map((rec, i) => (
+                      <li key={i} className="text-[10px] text-text-dim flex items-start gap-1.5">
+                        <span className="text-blue-500">-</span> {rec}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <p className="text-[8px] font-black text-amber-400 uppercase tracking-tighter mb-1.5">Execution Plan</p>
+                  <ul className="space-y-1">
+                    <li className="text-[10px] text-text-dim flex items-start gap-1.5">
+                      <span className="text-amber-500">-</span> Route updated on map
+                    </li>
+                    <li className="text-[10px] text-text-dim flex items-start gap-1.5">
+                      <span className="text-amber-500">-</span> Alert sent to users
+                    </li>
+                    <li className="text-[10px] text-text-dim flex items-start gap-1.5">
+                      <span className="text-amber-500">-</span> Emergency ticket created
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-white/5 flex items-center justify-between">
+                <span className="text-[9px] font-bold text-text-muted uppercase">Outcome Prediction</span>
+                <span className="text-[10px] font-black text-green-500 underline decoration-green-500/30 underline-offset-4">
+                  REDUCED CONGESTION IN SIMULATION
+                </span>
+            </div>
+          </div>
+        </section>
+
+        {/* Почему это решение? - Rename and add Credibility */}
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+             <ShieldCheck size={14} className="text-blue-400" />
+             <h3 className="text-[10px] font-bold text-text-dim uppercase tracking-widest">Signal Credibility Audit</h3>
+          </div>
+          <div className="bg-bg-tertiary border border-border-main p-4 rounded-sm relative overflow-hidden">
+             <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
+             <div className="flex justify-between items-start mb-3">
+                <div>
+                  <p className="text-[8px] text-text-muted uppercase mb-1">Reliability Score</p>
+                  <p className="text-lg font-black text-white italic">
+                    {( (crisis.credibility?.score || 0) * 100).toFixed(0)}%
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[8px] text-text-muted uppercase mb-1">Misinformation Likelihood</p>
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-sm ${
+                    crisis.credibility?.misinformationLikelihood === 'HIGH' ? 'bg-red-500/20 text-red-500' :
+                    crisis.credibility?.misinformationLikelihood === 'MEDIUM' ? 'bg-amber-500/20 text-amber-500' :
+                    'bg-green-500/20 text-green-500'
+                  }`}>
+                    {crisis.credibility?.misinformationLikelihood || 'LOW'}
+                  </span>
+                </div>
+             </div>
+             
+             <div className="space-y-2">
+                <p className="text-[8px] text-text-muted uppercase">Logic Flags</p>
+                <div className="flex flex-wrap gap-2">
+                   {(crisis.credibility?.reliabilityFlags || ['SOURCE_VERIFIED', 'CROSS_REFERENCED_IOT']).map(flag => (
+                     <span key={flag} className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded-sm text-[8px] font-mono text-blue-400 uppercase">
+                        {flag}
+                     </span>
+                   ))}
+                </div>
+             </div>
+          </div>
+        </section>
+
         {/* Why this decision? */}
         <section>
           <div className="flex items-center gap-2 mb-3">

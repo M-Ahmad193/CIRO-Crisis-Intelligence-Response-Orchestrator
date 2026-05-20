@@ -65,8 +65,24 @@ export interface Crisis {
     explanation: string;
     confidence: number;
   };
+  credibility?: {
+    score: number;
+    reliabilityFlags: string[];
+    misinformationLikelihood: "LOW" | "MEDIUM" | "HIGH";
+  };
+  messaging?: Array<{
+    recipient: string;
+    priority: string;
+    message: string;
+    isGeoFenced: boolean;
+    radius: number;
+  }>;
   recommendations?: string[];
   actionsTaken?: string[];
+  blockedRoutes?: Array<{
+    points: [number, number][];
+    color: string;
+  }>;
 }
 
 export interface TraceEntry {

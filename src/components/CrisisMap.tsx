@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap, Polyline } from "react-leaflet";
 import { HeatmapLayer } from "react-leaflet-heatmap-layer-v3";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -149,6 +149,22 @@ export default function CrisisMap({ crises, resources, selectedCrisis, mapMode, 
             </React.Fragment>
           );
         })}
+
+        {crises.map(crisis => 
+          crisis.blockedRoutes?.map((route, i) => (
+            <Polyline 
+              key={`${crisis.id}-route-${i}`}
+              positions={route.points}
+              pathOptions={{
+                color: route.color,
+                weight: 5,
+                opacity: 0.8,
+                dashArray: "10, 10",
+                lineCap: "round"
+              }}
+            />
+          ))
+        )}
 
         {animatedResources.map(resource => {
           if (!resource.location) return null;
