@@ -9,7 +9,7 @@ export default defineConfig(() => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
-        'react-is': 'react-is',
+        'react-is': path.resolve(__dirname, 'node_modules/react-is'),
       },
       dedupe: ['react', 'react-dom', 'react-is'],
     },
