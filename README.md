@@ -40,18 +40,23 @@ We have implemented a **Reasoning Transparency Panel** that visualizes:
 
 ## 🚀 Deployment (Google Cloud Run)
 
-To deploy CIRO to Google Cloud Run using the GitHub integration:
+To deploy CIRO to Google Cloud Run and fix the build errors, follow these exact steps:
 
-1. **Connect Repository**: In the Cloud Run console, select "Continuously deploy new revisions from a source repository".
-2. **Build Configuration**:
-   - Select **Dockerfile** as the build type.
-   - Set the source location to `/Dockerfile`.
+1. **Service Settings**:
+   - Select "Continuously deploy new revisions from a source repository".
+   - Click **SET UP WITH CLOUD BUILD**.
+2. **Setup Cloud Build**:
+   - Select your GitHub Repository.
+   - **Build Configuration**:
+     - **Build Type**: Select **Dockerfile** (⚠️ Do NOT select Buildpacks).
+     - **Source location**: `/Dockerfile`.
+   - Click **Save**.
 3. **Advanced Settings**:
-   - **Container Port**: Set to `3000`.
-   - **Environment Variables**: Add `GEMINI_API_KEY` (if required by your agent logic).
-4. **Authentication**: Choose "Allow unauthenticated invocations" if public access is desired.
+   - **Container Port**: Set to `3000` (Google defaults to 8080, make sure this matches or update it to 3000).
+   - **Environment Variables**: Add `GEMINI_API_KEY` (if your engine uses it).
+4. **Service Name**: Ensure your Service Name does not end with a dash `-` (e.g., use `ciro-engine` instead of `ciro-orchestrator-`).
 
-*The system includes a pre-configured Dockerfile and .npmrc for seamless building with React 19 dependency resolution.*
+*The current code includes a specialized `vite.config.ts`, `Dockerfile`, and `.npmrc` specifically tuned to resolve React 19 and Recharts dependency conflicts (`react-is`) during Google Cloud Build.*
 
 ---
 
