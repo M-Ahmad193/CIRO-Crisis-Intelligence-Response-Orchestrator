@@ -53,7 +53,7 @@ export default function App() {
       <header className="h-14 border-b border-border-main flex items-center justify-between px-6 bg-bg-tertiary shrink-0 z-50">
         <div className="flex items-center gap-4">
           <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center font-bold text-white shadow-[0_0_15px_rgba(220,38,38,0.3)]">C</div>
-          <h1 className="tech-title text-lg tracking-tight">CIRO <span className="text-red-500 font-normal">/ OPS CENTER</span></h1>
+          <h1 className="tech-title tracking-tight" style={{ width: '86.8px', height: '20px', fontSize: '11px' }}>CIRO <span className="text-red-500 font-normal">/ OPS CENTER</span></h1>
           <div className="ml-6 h-4 w-px bg-border-main"></div>
           <div className="flex gap-6 ml-4">
             <div className="flex flex-col items-start gap-0.5">
@@ -107,7 +107,7 @@ export default function App() {
 
       <footer className="h-8 bg-bg-tertiary border-t border-border-main flex items-center justify-between px-6 shrink-0">
         <div className="flex gap-6 text-[9px] font-mono text-text-muted uppercase tracking-widest">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 hidden sm:flex">
             <span>Coordinates:</span>
             <span className="text-amber-500">31.5204° N, 74.3587° E</span>
           </div>
@@ -115,7 +115,7 @@ export default function App() {
             <span>API Latency:</span>
             <span className="text-green-500">14ms</span>
           </div>
-          <div className="flex items-center gap-1.5 hidden sm:flex">
+          <div className="flex items-center gap-1.5 shrink-0">
             <span>Orchestrator:</span>
             <span className="text-blue-500 font-bold underline decoration-blue-500/30 underline-offset-2">Active</span>
           </div>
@@ -123,9 +123,6 @@ export default function App() {
             <span>Event Streaming:</span>
             <span className="text-blue-400">4.2GB/s</span>
           </div>
-        </div>
-        <div className="text-[9px] font-mono text-text-dim italic uppercase tracking-wider">
-          Google Antigravity Orchestrator v2.4.1-Stable
         </div>
       </footer>
     </div>

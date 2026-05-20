@@ -1,6 +1,6 @@
 {
-  "name": "CIRO — Crisis Intelligence & Response Orchestrator",
-  "description": "Enterprise-grade agentic crisis management platform powered by Google Antigravity. Features real-time signal fusion, credibility analysis, severity prediction, and resource optimization.",
+  "name": "CIRO Mobile — Tactical Crisis Intelligence",
+  "description": "Multi-page mobile tactical interface for CIRO. Features paginated map operations, real-time signal telemetry, and AI-driven response orchestration for field operators.",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

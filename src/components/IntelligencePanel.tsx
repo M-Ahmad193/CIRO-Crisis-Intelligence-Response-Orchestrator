@@ -133,54 +133,88 @@ export default function IntelligencePanel({ crisis, signals }: Props) {
              <Network size={14} className="text-purple-400" />
              <h3 className="text-[10px] font-bold text-text-dim uppercase tracking-widest">Signal Linkage Graph</h3>
           </div>
-          <div className="space-y-3">
-             <div className="flex items-center justify-center py-6 bg-bg-tertiary border border-border-main rounded-sm relative overflow-hidden">
-                <div className="relative w-full max-w-[200px] h-[100px]">
-                   {/* Root node */}
-                   <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-red-500/20 border border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)] z-20 flex items-center justify-center">
-                     <HelpCircle size={16} className="text-red-500" />
-                   </div>
-                   
-                   {/* Signal nodes */}
-                   {relatedSignals.map((_, i) => {
-                      const angle = (i / relatedSignals.length) * Math.PI * 2;
-                      const x = Math.cos(angle) * 70;
-                      const y = Math.sin(angle) * 35;
-                      return (
-                        <React.Fragment key={i}>
-                           <div 
-                              className="absolute w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/50 z-20 flex items-center justify-center"
-                              style={{ left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)`, transform: 'translate(-50%, -50%)' }}
-                           >
-                              <Zap size={10} className="text-blue-400" />
-                           </div>
-                           <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
-                              <line 
-                                x1="50%" y1="50%" 
-                                x2={`calc(50% + ${x}px)`} y2={`calc(50% + ${y}px)`} 
-                                stroke="#3b82f6" strokeWidth="1" strokeDasharray="4 2" className="opacity-30"
-                              />
-                           </svg>
-                        </React.Fragment>
-                      )
-                   })}
+          <div className="space-y-4">
+             <div className="flex flex-col gap-4 bg-bg-tertiary border border-border-main p-4 rounded-sm relative overflow-hidden">
+                <div className="flex items-center justify-center py-4 relative">
+                  <div className="relative w-full max-w-[200px] h-[100px]">
+                    {/* Root node */}
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-red-500/20 border border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)] z-20 flex items-center justify-center">
+                      <HelpCircle size={16} className="text-red-500" />
+                    </div>
+                    
+                    {/* Signal nodes */}
+                    {relatedSignals.map((_, i) => {
+                        const angle = (i / relatedSignals.length) * Math.PI * 2;
+                        const x = Math.cos(angle) * 70;
+                        const y = Math.sin(angle) * 35;
+                        return (
+                          <React.Fragment key={i}>
+                            <div 
+                                className="absolute w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/50 z-20 flex items-center justify-center"
+                                style={{ left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)`, transform: 'translate(-50%, -50%)' }}
+                            >
+                                <Zap size={10} className="text-blue-400" />
+                            </div>
+                            <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
+                                <line 
+                                  x1="50%" y1="50%" 
+                                  x2={`calc(50% + ${x}px)`} y2={`calc(50% + ${y}px)`} 
+                                  stroke="#3b82f6" strokeWidth="1" strokeDasharray="4 2" className="opacity-30"
+                                />
+                            </svg>
+                          </React.Fragment>
+                        )
+                    })}
+                  </div>
                 </div>
-               <div className="absolute top-2 right-2 flex flex-col gap-1.5 bg-bg-surface p-2 border border-border-main/50 rounded-sm">
+
+                {/* Legend - Responsive layout */}
+                <div className="flex flex-wrap gap-x-4 gap-y-2 pt-4 border-t border-border-main/30">
                    <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]" />
-                      <span className="text-[8px] text-text-muted uppercase font-bold">Root Anomaly</span>
+                      <span className="text-[8px] text-text-muted uppercase font-bold tracking-wider">Root Anomaly</span>
                    </div>
                    <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_#3b82f6]" />
-                      <span className="text-[8px] text-text-muted uppercase font-bold">Evidence Node</span>
+                      <span className="text-[8px] text-text-muted uppercase font-bold tracking-wider">Evidence Node</span>
                    </div>
                    <div className="flex items-center gap-2">
                       <div className="w-4 h-0.5 bg-blue-500 opacity-30 border-t border-dashed" />
-                      <span className="text-[8px] text-text-muted uppercase font-bold">Causal Link</span>
+                      <span className="text-[8px] text-text-muted uppercase font-bold tracking-wider">Causal Link</span>
                    </div>
                 </div>
              </div>
              
+             {/* Social Media Sentiment Insight */}
+             <div className="bg-bg-tertiary border border-border-main p-4 rounded-sm space-y-4 mb-4">
+                <div className="flex justify-between items-end mb-1">
+                   <span className="text-[9px] font-mono text-text-dim">SENTIMENT_POLARITY</span>
+                   <span className="text-xs font-black text-red-500">-0.68</span>
+                </div>
+                <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden flex">
+                   <div className="h-full bg-red-500" style={{ width: '68%' }} />
+                   <div className="h-full bg-white/20" style={{ width: '32%' }} />
+                </div>
+                <div className="grid grid-cols-2 gap-4 pt-2">
+                   <div className="space-y-1">
+                      <p className="text-[7px] text-text-muted uppercase">Primary Emotion</p>
+                      <p className="text-[10px] font-black text-white italic">URGENCY / PANIC</p>
+                   </div>
+                   <div className="space-y-1">
+                      <p className="text-[7px] text-text-muted uppercase">Viral Velocity</p>
+                      <p className="text-[10px] font-black text-blue-400">+142% p/h</p>
+                   </div>
+                </div>
+                <div className="pt-3 border-t border-white/5">
+                   <p className="text-[8px] text-text-dim uppercase mb-2 font-black tracking-widest">Entity Extraction</p>
+                   <div className="flex flex-wrap gap-2">
+                      {["Flood", "Help", "Mall Road", "Rescue", "Power Out"].map(tag => (
+                        <span key={tag} className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[8px] font-bold text-blue-400 uppercase">{tag}</span>
+                      ))}
+                   </div>
+                </div>
+             </div>
+
              {/* Signal Detail List */}
              <div className="space-y-2">
                 {relatedSignals.map((s) => (
