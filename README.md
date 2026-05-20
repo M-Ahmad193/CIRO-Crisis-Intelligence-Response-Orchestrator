@@ -38,4 +38,21 @@ We have implemented a **Reasoning Transparency Panel** that visualizes:
 
 ---
 
+## 🚀 Deployment (Google Cloud Run)
+
+To deploy CIRO to Google Cloud Run using the GitHub integration:
+
+1. **Connect Repository**: In the Cloud Run console, select "Continuously deploy new revisions from a source repository".
+2. **Build Configuration**:
+   - Select **Dockerfile** as the build type.
+   - Set the source location to `/Dockerfile`.
+3. **Advanced Settings**:
+   - **Container Port**: Set to `3000`.
+   - **Environment Variables**: Add `GEMINI_API_KEY` (if required by your agent logic).
+4. **Authentication**: Choose "Allow unauthenticated invocations" if public access is desired.
+
+*The system includes a pre-configured Dockerfile and .npmrc for seamless building with React 19 dependency resolution.*
+
+---
+
 *Developed for the Google Antigravity Hackathon Series.*
