@@ -5,10 +5,10 @@ FROM node:20-slim
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY package*.json .npmrc* ./
 
 # Install dependencies
-# Using --legacy-peer-deps to resolve React 19 vs Heatmap plugin version conflicts
+# We use .npmrc (legacy-peer-deps=true) but also include the flag explicitly
 RUN npm install --legacy-peer-deps
 
 # Copy source code
