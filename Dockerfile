@@ -7,8 +7,9 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (including devDependencies for the build step)
-RUN npm install
+# Install dependencies
+# Using --legacy-peer-deps to resolve React 19 vs Heatmap plugin version conflicts
+RUN npm install --legacy-peer-deps
 
 # Copy source code
 COPY . .
