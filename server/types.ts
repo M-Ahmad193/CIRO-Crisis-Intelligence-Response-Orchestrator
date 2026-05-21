@@ -19,6 +19,11 @@ export interface Signal {
   };
   confidence: number;
   sourceReliability: number;
+  urgencyScore?: number;
+  velocityScore?: number;
+  isSpam?: boolean;
+  isDuplicate?: boolean;
+  sourceTrustScore?: number;
   metadata?: Record<string, any>;
 }
 
@@ -67,8 +72,19 @@ export interface Crisis {
   };
   credibility?: {
     score: number;
+    reason?: string;
     reliabilityFlags: string[];
     misinformationLikelihood: "LOW" | "MEDIUM" | "HIGH";
+    analysis?: {
+      urgencyScore: number;
+      velocityValue: number;
+      isSpam: boolean;
+      isDuplicate: boolean;
+      hasContradictions: boolean;
+      sourceTrust: number;
+      geoConfidence: number;
+      botLikelihood: number;
+    };
   };
   messaging?: Array<{
     recipient: string;

@@ -1,4 +1,3 @@
-import { GoogleGenAI, Type } from "@google/genai";
 import { 
   Signal, 
   Crisis, 
@@ -12,15 +11,9 @@ import {
   TrafficPoint
 } from "./types";
 import { v4 as uuidv4 } from "uuid";
-
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY!,
-  httpOptions: {
-    headers: {
-      'User-Agent': 'aistudio-build',
-    }
-  }
-});
+import { withRetry } from "./aiUtils";
+import { CredibilityPipeline } from "./credibilityPipeline";
+import { getGroqClient, GROQ_MODEL } from "./groqClient";
 
 export class AntigravityOrchestrator {
   private crises: Map<string, Crisis> = new Map();
@@ -45,21 +38,15 @@ export class AntigravityOrchestrator {
   private startSimulationTicker() {
     this.timer = setInterval(() => {
       this.updateSimulationState();
-    }, 2000); // 2-second simulation tick
+    }, 2000); 
   }
 
   private updateSimulationState() {
     let stateChanged = false;
 
-    // Simulate Unit Movement
     this.resources.forEach(res => {
       if (res.status === "DEPLOYED") {
-        const allocation = Array.from(this.crises.values()).map(c => {
-            // Find if this resource is assigned to this crisis
-            // (In a more complex app, we'd have a specific allocation map)
-            // For now, let's assume they move toward the first crisis if deployed
-            return c;
-        })[0];
+        const allocation = Array.from(this.crises.values()).map(c => c)[0];
 
         if (allocation) {
            const target = allocation.location;
@@ -82,21 +69,19 @@ export class AntigravityOrchestrator {
     }
   }
 
-  private async safeGenerateContent(prompt: string, fallback: any, retryCount = 0): Promise<any> {
+  private async safeGenerateContent(prompt: string, fallback: any): Promise<any> {
+    const groq = getGroqClient();
     try {
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        config: { responseMimeType: "application/json" },
-        contents: prompt
-      });
-      return JSON.parse(response.text || "{}");
+      const completion = await withRetry(() => groq.chat.completions.create({
+        model: GROQ_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" }
+      }), 2, 5000);
+      
+      const content = completion.choices[0]?.message?.content || "{}";
+      return JSON.parse(content);
     } catch (error: any) {
-      if (retryCount < 2 && error?.status === 503) {
-        this.addTrace(null, "System Kernel", "RETRETING: Model busy (503). Backoff triggered...", "INFO");
-        await new Promise(r => setTimeout(r, 1000 * (retryCount + 1)));
-        return this.safeGenerateContent(prompt, fallback, retryCount + 1);
-      }
-      this.addTrace(null, "System Kernel", "FALLBACK_TRIGGERED: Model unavailable. Using heuristic estimator.", "FAILURE", { error: error?.message });
+      this.addTrace(null, "System Kernel", "FALLBACK_TRIGGERED: Groq model unavailable. Using heuristic estimator.", "FAILURE", { error: error?.message });
       return fallback;
     }
   }
@@ -148,14 +133,63 @@ export class AntigravityOrchestrator {
     
     this.addTrace(null, "Credibility Agent", `SIGNAL_VERIFIED: Confidence score ${credibility.score.toFixed(2)}`, "SUCCESS", credibility);
 
-    // 2. Classification delegation
-    this.addTrace(null, "Supervisor Agent", "DELEGATING: Verified signal to Classification Specialist", "DELEGATE");
-    const classification = await this.runClassificationAgent(signal);
-    this.addTrace(null, "Classification Agent", `CRISIS_DETECTED: Class [${classification.type}] Severity [${classification.severity}]`, "SUCCESS", classification);
+    // 2. Fused Analysis (Consolidated to save quota)
+    this.addTrace(null, "Supervisor Agent", "DELEGATING: Signal fusion to Strategic AI Kernel", "DELEGATE");
+    
+    const fusedPrompt = `Analyze this verified emergency signal and perform a full strategic assessment.
+    
+    Signal: ${JSON.stringify(signal)}
+    Credibility Context: ${JSON.stringify(credibility)}
+    
+    Tasks:
+    1. Classification: Identify CrisisType and Severity.
+    2. Escalation Forecasting: Probability of spread and secondary risks.
+    3. Outcome Simulation: Predictive impact analysis (risk score, casualties, congestion).
+    4. Strategic Comms: Dispatch multi-stakeholder alerts.
+    
+    Return JSON strictly in this format:
+    {
+      "classification": { 
+        "type": "FIRE" | "FLOOD" | "ACCIDENT" | etc, 
+        "severity": "LOW" | "MEDIUM" | "HIGH" | "CRITICAL", 
+        "description": "string",
+        "affectedPopulation": number,
+        "radius": number,
+        "inference": "string",
+        "explanation": "string",
+        "recommendations": ["string"]
+      },
+      "forecast": { "escalationProb": number, "secondaryRisks": ["string"] },
+      "impact": { 
+        "before": { "riskScore": number, "estimatedCasualties": number, "congestionLevel": number },
+        "after": { "riskScore": number, "estimatedCasualties": number, "congestionLevel": number, "improvement": number }
+      },
+      "alerts": [{ "recipient": "string", "priority": "string", "message": "string", "isGeoFenced": boolean, "radius": number }]
+    }`;
+
+    const analysis = await this.safeGenerateContent(fusedPrompt, {
+      classification: { 
+        type: signal.content.toLowerCase().includes("flood") ? CrisisType.FLOOD : CrisisType.ACCIDENT,
+        severity: SeverityLevel.HIGH,
+        description: signal.content,
+        affectedPopulation: 1000,
+        radius: 300,
+        inference: "Heuristic classification",
+        explanation: "API Quota limited fallback",
+        recommendations: ["Monitor situation"]
+      },
+      forecast: { escalationProb: 0.2, secondaryRisks: [] },
+      impact: {
+        before: { riskScore: 0.7, estimatedCasualties: 5, congestionLevel: 0.5 },
+        after: { riskScore: 0.3, estimatedCasualties: 1, congestionLevel: 0.2, improvement: 0.4 }
+      },
+      alerts: [{ recipient: "Authorities", priority: "HIGH", message: "Signal detected", isGeoFenced: false, radius: 0 }]
+    });
+
+    const classification = analysis.classification;
 
     // 3. Crisis Identity Management
     let crisis = this.findMatchingCrisis(signal, classification);
-    const isUpdate = !!crisis;
 
     if (!crisis) {
       crisis = {
@@ -165,7 +199,7 @@ export class AntigravityOrchestrator {
         description: classification.description,
         status: "DETECTED",
         severity: classification.severity,
-        confidence: classification.confidence,
+        confidence: 0.9,
         affectedPopulation: classification.affectedPopulation,
         radius: classification.radius,
         startTime: new Date().toISOString(),
@@ -173,112 +207,47 @@ export class AntigravityOrchestrator {
         signals: [signal.id],
         agents: [],
         resources: [],
-        impact: {
-          before: { riskScore: 0, estimatedCasualties: 0, congestionLevel: 0 },
-          after: { riskScore: 0, estimatedCasualties: 0, congestionLevel: 0, improvement: 0 }
-        },
+        impact: analysis.impact,
         reasoning: {
-            inference: classification.inference || "Initial situation assessment",
-            explanation: classification.explanation || "Signal pattern indicates anomaly",
-            confidence: classification.confidence
+            inference: classification.inference,
+            explanation: classification.explanation,
+            confidence: 0.9
         },
         credibility: {
           score: credibility.score,
+          reason: credibility.reason,
           reliabilityFlags: credibility.reliabilityFlags || [],
-          misinformationLikelihood: credibility.misinformationLikelihood || "LOW"
+          misinformationLikelihood: credibility.misinformationLikelihood || "LOW",
+          analysis: credibility.analysis
         },
         recommendations: classification.recommendations || [],
         actionsTaken: ["SIGNAL_FUSION_COMPLETED"],
-        blockedRoutes: classification.type === CrisisType.FLOOD ? [
-          {
-            points: [
-              [signal.location.lat - 0.005, signal.location.lng - 0.005],
-              [signal.location.lat + 0.005, signal.location.lng + 0.005]
-            ],
-            color: "#ff3e3e"
-          },
-          {
-            points: [
-              [signal.location.lat - 0.005, signal.location.lng + 0.005],
-              [signal.location.lat + 0.005, signal.location.lng - 0.005]
-            ],
-            color: "#ff3e3e"
-          }
-        ] : []
+        blockedRoutes: []
       };
       this.crises.set(crisis.id, crisis);
       this.addTrace(crisis.id, "Supervisor Agent", "SYSTEM_ACTION: New Incident Identity initialized.", "INFO");
     } else {
       crisis.signals.push(signal.id);
-      this.addTrace(crisis.id, "Supervisor Agent", `SYSTEM_ACTION: Appending signal vector to existing incident ${crisis.id.substring(0, 8)}`, "INFO");
-      
-      // Update reasoning with fused data
-      crisis.reasoning = {
-        inference: classification.inference || crisis.reasoning?.inference || "",
-        explanation: classification.explanation || crisis.reasoning?.explanation || "",
-        confidence: (crisis.confidence + classification.confidence) / 2
-      };
+      crisis.impact = analysis.impact;
       crisis.recommendations = Array.from(new Set([...(crisis.recommendations || []), ...(classification.recommendations || [])]));
     }
 
-    // 4. Parallel Analysis
-    this.addTrace(crisis.id, "Supervisor Agent", "ORCHESTRATING: Strategic specialists (Forecast, Resource, Simulation)", "INFO");
-    
-    const [forecast, allocations, simulation] = await Promise.all([
-      this.runForecastAgent(crisis),
-      this.runResourceAgent(crisis),
-      this.runSimulationAgent(crisis, []) // Pre-allocation simulation
-    ]);
-
-    this.addTrace(crisis.id, "Forecast Agent", `PREDICTION: Escalation risk is ${(forecast.escalationProb * 100).toFixed(0)}%. Secondary: ${forecast.secondaryRisks?.[0] || 'None'}`, "SUCCESS", forecast);
-    
+    // 4. Resource Allocation (Heuristic - no quota cost)
+    const allocations = await this.runResourceAgent(crisis);
     crisis.resources = allocations;
-    this.addTrace(crisis.id, "Resource Agent", `OPTIMIZATION: Allocated ${allocations.length} responders based on proximity/severity.`, "SUCCESS", allocations);
+    this.addTrace(crisis.id, "Resource Agent", `OPTIMIZATION: Allocated ${allocations.length} responders.`, "SUCCESS", allocations);
 
-    const postSimulation = await this.runSimulationAgent(crisis, allocations);
-    crisis.impact = postSimulation;
-    this.addTrace(crisis.id, "Simulation Agent", `OUTCOME_PREDICTION: Action vector results in ${(postSimulation.after.improvement * 100).toFixed(0)}% risk reduction.`, "SUCCESS", postSimulation);
-
-    // 5. Comms
-    const messages = await this.runMessagingAgent(crisis);
-    crisis.messaging = messages;
-    this.addTrace(crisis.id, "Messaging Agent", `COMMUNICATIONS: Dispatched ${messages.length} targeted alerts across stakeholder mesh.`, "SUCCESS", messages);
-
-    crisis.actionsTaken = Array.from(new Set([
-        ...(crisis.actionsTaken || []),
-        "RESOURCE_DISPATCH_AUTHORIZED",
-        "TRAFFIC_REROUTING_INITIATED",
-        "PUBLIC_ALERT_BROADCASTED"
-    ]));
+    // 5. Apply Fused Outcomes
+    crisis.messaging = analysis.alerts;
+    this.addTrace(crisis.id, "Forecast Agent", `PREDICTION: Escalation risk is ${(analysis.forecast.escalationProb * 100).toFixed(0)}%.`, "SUCCESS", analysis.forecast);
+    this.addTrace(crisis.id, "Messaging Agent", `COMMUNICATIONS: Dispatched ${analysis.alerts.length} alerts.`, "SUCCESS", analysis.alerts);
 
     crisis.status = "ACTIVE";
     this.broadcastUpdate();
   }
 
   private async runCredibilityAgent(signal: Signal) {
-    const prompt = `Evaluate the credibility and validity of this emergency signal. 
-      Analyze for potential misinformation, spam, or conflicting data patterns.
-      Support multilingual inputs (Urdu/English).
-      
-      Signal: ${JSON.stringify(signal)}
-      
-      Return JSON: { 
-        score: number (0-1), 
-        reason: string, 
-        isSpam: boolean, 
-        isConflicting: boolean,
-        reliabilityFlags: string[],
-        misinformationLikelihood: "LOW" | "MEDIUM" | "HIGH"
-      }`;
-    
-    return this.safeGenerateContent(prompt, {
-      score: signal.confidence * signal.sourceReliability,
-      reason: "Heuristic estimation based on source reliability",
-      isSpam: false,
-      isConflicting: false,
-      reliabilityFlags: ["SOURCE_VERIFIED"],
-      misinformationLikelihood: "LOW"
-    });
+    return CredibilityPipeline.analyze(signal, this.signals);
   }
 
   private async runClassificationAgent(signal: Signal) {

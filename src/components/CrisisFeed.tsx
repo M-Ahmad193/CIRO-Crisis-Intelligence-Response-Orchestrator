@@ -101,6 +101,17 @@ export default function CrisisFeed({ crises, selectedId, onSelect }: Props) {
                   <div className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
                   <span className="text-[8px] font-bold text-red-500 uppercase tracking-widest">Live</span>
                </div>
+               {crisis.credibility && (
+                 <div className={`px-2 py-1 rounded-lg flex items-center gap-1.5 border ${
+                   crisis.credibility.score > 0.8 ? 'bg-green-500/5 border-green-500/20 text-green-500' :
+                   crisis.credibility.score < 0.4 ? 'bg-red-500/5 border-red-500/20 text-red-500 animate-pulse' :
+                   'bg-amber-500/5 border-amber-500/20 text-amber-500'
+                 }`}>
+                    <span className="text-[8px] font-black uppercase tracking-widest leading-none">
+                      {(crisis.credibility.score * 100).toFixed(0)}% Trust
+                    </span>
+                 </div>
+               )}
             </div>
             
             <motion.div 

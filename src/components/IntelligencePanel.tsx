@@ -283,43 +283,102 @@ export default function IntelligencePanel({ crisis, signals }: Props) {
           </div>
         </section>
 
-        {/* Signal Credibility Audit */}
+        {/* Signal Credibility Audit - ENHANCED PIPELINE VIEW */}
         <section>
-          <div className="flex items-center gap-2 mb-3">
-             <ShieldCheck size={14} className="text-blue-400" />
-             <h3 className="text-[10px] font-bold text-text-dim uppercase tracking-widest">Signal Credibility Audit</h3>
+          <div className="flex items-center gap-3 mb-6">
+             <ShieldCheck size={16} className="text-blue-400" />
+             <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] leading-none">Credibility Analytics Matrix</h3>
           </div>
-          <div className="bg-bg-tertiary border border-border-main p-4 rounded-sm relative overflow-hidden">
-             <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
-             <div className="flex justify-between items-start mb-3">
-                <div>
-                  <p className="text-[8px] text-text-muted uppercase mb-1">Reliability Score</p>
-                  <p className="text-lg font-black text-white italic">
-                    {( (crisis.credibility?.score || 0) * 100).toFixed(0)}%
-                  </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+             {/* Primary Verdict */}
+             <div className="md:col-span-2 bg-gradient-to-br from-bg-tertiary to-black/40 border border-white/5 p-8 rounded-[2rem] relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                   <Target size={120} className="text-blue-500" />
                 </div>
-                <div className="text-right">
-                  <p className="text-[8px] text-text-muted uppercase mb-1">Misinformation Likelihood</p>
-                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-sm ${
-                    crisis.credibility?.misinformationLikelihood === 'HIGH' ? 'bg-red-500/20 text-red-500' :
-                    crisis.credibility?.misinformationLikelihood === 'MEDIUM' ? 'bg-amber-500/20 text-amber-500' :
-                    'bg-green-500/20 text-green-500'
-                  }`}>
-                    {crisis.credibility?.misinformationLikelihood || 'LOW'}
-                  </span>
+                <div className="flex justify-between items-start relative z-10 mb-8">
+                   <div className="space-y-1">
+                      <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Aggregated Trust Score</p>
+                      <h4 className="text-5xl font-black text-white italic tracking-tighter">
+                         {( (crisis.credibility?.score || 0) * 100).toFixed(0)}<span className="text-lg font-mono text-blue-500 ml-1">%</span>
+                      </h4>
+                   </div>
+                   <div className="text-right">
+                      <p className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-2">Misinformation Risk</p>
+                      <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                        crisis.credibility?.misinformationLikelihood === 'HIGH' ? 'bg-red-500/20 text-red-500 border-red-500/30' :
+                        crisis.credibility?.misinformationLikelihood === 'MEDIUM' ? 'bg-amber-500/20 text-amber-500 border-amber-500/30' :
+                        'bg-green-500/20 text-green-500 border-green-500/30'
+                      }`}>
+                        {crisis.credibility?.misinformationLikelihood || 'LOW'} VERDICT
+                      </span>
+                   </div>
+                </div>
+
+                <div className="space-y-6 relative z-10">
+                   <div className="bg-white/[0.02] border border-white/10 p-5 rounded-2xl backdrop-blur-md">
+                      <p className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-3">Diagnostic Summary</p>
+                      <p className="text-sm font-bold text-white italic leading-relaxed">
+                         {crisis.credibility?.reason || "System performing heuristic validation based on multi-vector integration."}
+                      </p>
+                   </div>
+                   <div className="flex flex-wrap gap-2">
+                      {(crisis.credibility?.reliabilityFlags || ['SOURCE_VERIFIED', 'IOT_FUSION']).map((flag, i) => (
+                        <motion.span 
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.5 + (i * 0.1) }}
+                          key={flag} 
+                          className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-lg text-[9px] font-black text-blue-400 uppercase tracking-tighter"
+                        >
+                           {flag}
+                        </motion.span>
+                      ))}
+                   </div>
                 </div>
              </div>
-             
-             <div className="space-y-2">
-                <p className="text-[8px] text-text-muted uppercase">Logic Flags</p>
-                <div className="flex flex-wrap gap-2">
-                   {(crisis.credibility?.reliabilityFlags || ['SOURCE_VERIFIED', 'CROSS_REFERENCED_IOT']).map(flag => (
-                     <span key={flag} className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded-sm text-[8px] font-mono text-blue-400 uppercase">
-                        {flag}
-                     </span>
-                   ))}
-                </div>
+
+             {/* Metric Column */}
+             <div className="space-y-4">
+                {[
+                  { label: "Urgency Score", val: crisis.credibility?.analysis?.urgencyScore || 0.5, color: "bg-red-500" },
+                  { label: "Geo Confidence", val: crisis.credibility?.analysis?.geoConfidence || 0.8, color: "bg-blue-500" },
+                  { label: "Source Trust", val: crisis.credibility?.analysis?.sourceTrust || 0.7, color: "bg-green-500" },
+                  { label: "Bot Likelihood", val: crisis.credibility?.analysis?.botLikelihood || 0.1, color: "bg-purple-500" }
+                ].map((m, i) => (
+                  <div key={m.label} className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl">
+                     <div className="flex justify-between items-center mb-1.5">
+                        <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">{m.label}</span>
+                        <span className="text-[10px] font-black text-white">{(m.val * 100).toFixed(0)}%</span>
+                     </div>
+                     <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${m.val * 100}%` }}
+                          transition={{ delay: 0.8 + (i * 0.1), duration: 1.5 }}
+                          className={`h-full ${m.color}`}
+                        />
+                     </div>
+                  </div>
+                ))}
              </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+             {[
+               { icon: <Activity size={14} />, label: "Spam Detection", status: crisis.credibility?.analysis?.isSpam ? "DETECTED" : "CLEAN", active: !!crisis.credibility?.analysis?.isSpam },
+               { icon: <Radio size={14} />, label: "Duplicates", status: crisis.credibility?.analysis?.isDuplicate ? "IDENTIFIED" : "UNIQUE", active: !!crisis.credibility?.analysis?.isDuplicate },
+               { icon: <Zap size={14} />, label: "Conflicts", status: crisis.credibility?.analysis?.hasContradictions ? "FOUND" : "STABLE", active: !!crisis.credibility?.analysis?.hasContradictions },
+               { icon: <Network size={14} />, label: "Mention Velocity", status: `${crisis.credibility?.analysis?.velocityValue || 0} sig/5m`, active: (crisis.credibility?.analysis?.velocityValue || 0) > 5 }
+             ].map((item, i) => (
+               <div key={item.label} className={`p-4 rounded-2xl border transition-all ${item.active ? 'bg-red-500/10 border-red-500/30' : 'bg-white/[0.02] border-white/5'}`}>
+                  <div className={`p-2 w-fit rounded-lg mb-3 ${item.active ? 'bg-red-500/20 text-red-500' : 'bg-white/5 text-text-muted'}`}>
+                     {item.icon}
+                  </div>
+                  <p className="text-[8px] text-text-muted uppercase font-black mb-1">{item.label}</p>
+                  <p className={`text-[10px] font-black uppercase tracking-widest ${item.active ? 'text-red-400' : 'text-white'}`}>{item.status}</p>
+               </div>
+             ))}
           </div>
         </section>
 

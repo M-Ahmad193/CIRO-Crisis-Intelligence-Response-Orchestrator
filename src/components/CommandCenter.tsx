@@ -7,7 +7,7 @@ import StatsPanel from "./StatsPanel";
 import Timeline from "./Timeline";
 import IntelligencePanel from "./IntelligencePanel";
 import FleetDeployment from "./FleetDeployment";
-import { LayoutDashboard, ShieldAlert, Activity, Cpu, Map as MapIcon, Settings, RotateCcw, Zap, TrendingUp, Users, Clock, Radio, Brain, Maximize2, Minimize2, Truck } from "lucide-react";
+import { LayoutDashboard, ShieldAlert, Activity, Cpu, Map as MapIcon, Settings, RotateCcw, Zap, TrendingUp, Users, Clock, Radio, Brain, Maximize2, Minimize2, Truck, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 interface Props {
@@ -32,6 +32,20 @@ export default function CommandCenter({ state, traces }: Props) {
   const [isBottomPanelVisible, setIsBottomPanelVisible] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isFetchingOsint, setIsFetchingOsint] = useState(false);
+
+  const triggerOsint = async () => {
+    setIsFetchingOsint(true);
+    try {
+      const res = await fetch('/api/osint', { method: 'POST' });
+      const data = await res.json();
+      console.log('OSINT Result:', data);
+    } catch (err) {
+      console.error('OSINT Trigger Error:', err);
+    } finally {
+      setIsFetchingOsint(false);
+    }
+  };
   const [mapPosition, setMapPosition] = useState<{ center: [number, number]; zoom: number }>({
     center: [31.5204, 74.3587], // Lahore default
     zoom: 13
@@ -123,6 +137,13 @@ export default function CommandCenter({ state, traces }: Props) {
                     >
                       Demo
                     </button>
+                    <button 
+                      onClick={triggerOsint}
+                      disabled={isFetchingOsint}
+                      className={`p-2.5 px-5 bg-purple-600/10 text-purple-400 border border-purple-500/20 rounded-xl text-[10px] font-black uppercase transition-all active:scale-95 shadow-[0_0_20px_rgba(168,85,247,0.1)] ${isFetchingOsint ? 'opacity-50 cursor-wait' : ''}`}
+                    >
+                      {isFetchingOsint ? 'Syncing...' : 'Launch OSINT'}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -175,6 +196,13 @@ export default function CommandCenter({ state, traces }: Props) {
                       className="px-2 py-0.5 bg-blue-600/10 text-blue-400 border border-blue-500/30 rounded text-[8px] font-bold uppercase hover:bg-blue-600/20 transition-all font-mono"
                     >
                       DEMO
+                    </button>
+                    <button 
+                      onClick={triggerOsint}
+                      disabled={isFetchingOsint}
+                      className={`px-2 py-0.5 bg-purple-600/10 text-purple-400 border border-purple-500/30 rounded text-[8px] font-bold uppercase hover:bg-purple-600/20 transition-all font-mono italic ${isFetchingOsint ? 'opacity-50 cursor-wait' : ''}`}
+                    >
+                      {isFetchingOsint ? 'SYNCING' : 'OSINT'}
                     </button>
                   </div>
                 </div>
@@ -402,7 +430,11 @@ export default function CommandCenter({ state, traces }: Props) {
                           </div>
                       </div>
                       {state.signals.slice().reverse().map((s) => (
-                        <div key={s.id} className="flex gap-4 items-start group bg-white/[0.02] border border-white/5 p-4 rounded-xl transition-all hover:bg-white/[0.05]">
+                        <div 
+                          key={s.id} 
+                          className={`flex gap-4 items-start group bg-white/[0.02] border border-white/5 p-4 rounded-xl transition-all hover:bg-white/[0.05] ${s.metadata?.source_url ? 'cursor-pointer hover:border-blue-500/30' : ''}`}
+                          onClick={() => s.metadata?.source_url && window.open(s.metadata.source_url, '_blank')}
+                        >
                           <div className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center shadow-lg border ${
                             s.category === 'SOCIAL_MEDIA' ? 'bg-blue-500/10 text-blue-400 border-blue-500/10' : 'bg-amber-500/10 text-amber-400 border-amber-500/10'
                           }`}>
@@ -410,9 +442,20 @@ export default function CommandCenter({ state, traces }: Props) {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-text-main text-[13px] leading-relaxed group-hover:text-white transition-colors">{s.content}</p>
-                            <div className="flex gap-4 mt-3 font-black uppercase text-[8px] tracking-widest text-text-muted">
+                            <div className="flex flex-wrap gap-4 mt-3 font-black uppercase text-[8px] tracking-widest text-text-muted items-center">
                                <span className="flex items-center gap-1.5"><div className="w-1 h-1 rounded-full bg-blue-500" /> {(s.confidence * 100).toFixed(0)}% RELIABILITY</span>
-                               <span>{new Date(s.timestamp).toLocaleTimeString()}</span>
+                               <span className="flex items-center gap-1.5"><Clock size={10} /> {new Date(s.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                               {s.metadata?.source_url && (
+                                 <a 
+                                   href={s.metadata.source_url} 
+                                   target="_blank" 
+                                   rel="noopener noreferrer"
+                                   className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 transition-colors bg-blue-500/10 px-2 py-0.5 rounded"
+                                   onClick={(e) => e.stopPropagation()}
+                                 >
+                                   ORIGIN <ExternalLink size={10} />
+                                 </a>
+                               )}
                             </div>
                           </div>
                         </div>
@@ -472,7 +515,9 @@ export default function CommandCenter({ state, traces }: Props) {
                   {bottomTab === 'signals' && (
                     <div className="absolute inset-0 p-5 font-mono text-[10px] space-y-3 overflow-y-auto custom-scrollbar">
                       {state.signals.slice().reverse().map((s) => (
-                        <div key={s.id} className="flex gap-4 items-start group border-l-2 border-transparent hover:border-blue-500/50 hover:bg-white/5 p-3 rounded-sm transition-all">
+                        <div key={s.id} className={`flex gap-4 items-start group border-l-2 border-transparent hover:border-blue-500/50 hover:bg-white/5 p-3 rounded-sm transition-all ${s.metadata?.source_url ? 'cursor-pointer' : ''}`}
+                            onClick={() => s.metadata?.source_url && window.open(s.metadata.source_url, '_blank')}
+                        >
                           <div className={`w-9 h-9 shrink-0 rounded-lg flex items-center justify-center shadow-lg ${
                             s.category === 'SOCIAL_MEDIA' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/10' : 'bg-amber-500/10 text-amber-400 border border-amber-500/10'
                           }`}>
@@ -480,9 +525,20 @@ export default function CommandCenter({ state, traces }: Props) {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-text-main text-[12px] leading-tight group-hover:text-white transition-colors">{s.content}</p>
-                            <div className="flex gap-3 mt-2 font-black uppercase text-[7px] tracking-widest text-text-dim">
+                            <div className="flex flex-wrap gap-3 mt-2 font-black uppercase text-[7px] tracking-widest text-text-dim items-center">
                                <span>{(s.confidence * 100).toFixed(0)}% RELIABILITY</span>
-                               <span>{new Date(s.timestamp).toLocaleTimeString()}</span>
+                               <span className="flex items-center gap-1.5"><Clock size={10} /> {new Date(s.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                               {s.metadata?.source_url && (
+                                 <a 
+                                   href={s.metadata.source_url} 
+                                   target="_blank" 
+                                   rel="noopener noreferrer"
+                                   className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors"
+                                   onClick={(e) => e.stopPropagation()}
+                                 >
+                                   FEED_LINK <ExternalLink size={8} />
+                                 </a>
+                               )}
                             </div>
                           </div>
                         </div>
@@ -574,47 +630,61 @@ export default function CommandCenter({ state, traces }: Props) {
               </div>
               
               <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-bg-primary/50 custom-scrollbar">
-                 {state.signals.length > 0 ? state.signals.slice().reverse().map((s, i) => (
-                   <motion.div 
-                     initial={{ opacity: 0, y: 10 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     transition={{ delay: i * 0.05 }}
-                     key={s.id} 
-                     className="bg-bg-tertiary/60 border border-white/5 p-5 rounded-2xl shadow-xl"
-                   >
-                      <div className="flex justify-between items-center mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2.5 rounded-xl ${
-                            s.category === 'SOCIAL_MEDIA' ? 'bg-blue-500/15 text-blue-400' : 
-                            s.category === 'WEATHER' ? 'bg-amber-500/15 text-amber-400' : 'bg-purple-500/15 text-purple-400'
-                          }`}>
-                            {s.category === 'SOCIAL_MEDIA' && <Users size={18}/>}
-                            {s.category === 'WEATHER' && <Activity size={18}/>}
-                            {s.category !== 'SOCIAL_MEDIA' && s.category !== 'WEATHER' && <Radio size={18}/>}
-                          </div>
-                          <div>
-                            <span className="text-[10px] font-black text-white tracking-widest uppercase italic block leading-none">{s.category}</span>
-                            <span className="text-[8px] font-mono text-text-dim block mt-0.5">SOURCE: EXTERNAL_FEED_V4</span>
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-mono text-text-dim bg-white/5 px-2 py-1 rounded">{new Date(s.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                      </div>
-                      <p className="text-[14px] text-text-main font-medium leading-relaxed mb-4">{s.content}</p>
-                      <div className="pt-4 border-t border-white/5 flex items-center justify-between">
-                         <div className="flex items-center gap-3 flex-1">
-                            <div className="flex-1 max-w-[120px] h-1 bg-white/5 rounded-full overflow-hidden">
-                               <motion.div 
-                                 initial={{ width: 0 }}
-                                 whileInView={{ width: `${s.confidence * 100}%` }}
-                                 className="h-full bg-blue-500" 
-                               />
-                            </div>
-                            <span className="text-[9px] font-black text-blue-500">{(s.confidence * 100).toFixed(0)}% CONF</span>
+                  {state.signals.length > 0 ? state.signals.slice().reverse().map((s, i) => (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      key={s.id} 
+                      className={`bg-bg-tertiary/60 border border-white/5 p-5 rounded-2xl shadow-xl ${s.metadata?.source_url ? 'active:scale-95' : ''}`}
+                      onClick={() => s.metadata?.source_url && window.open(s.metadata.source_url, '_blank')}
+                    >
+                       <div className="flex justify-between items-center mb-4">
+                         <div className="flex items-center gap-3">
+                           <div className={`p-2.5 rounded-xl ${
+                             s.category === 'SOCIAL_MEDIA' ? 'bg-blue-500/15 text-blue-400' : 
+                             s.category === 'WEATHER' ? 'bg-amber-500/15 text-amber-400' : 'bg-purple-500/15 text-purple-400'
+                           }`}>
+                             {s.category === 'SOCIAL_MEDIA' && <Users size={18}/>}
+                             {s.category === 'WEATHER' && <Activity size={18}/>}
+                             {s.category !== 'SOCIAL_MEDIA' && s.category !== 'WEATHER' && <Radio size={18}/>}
+                           </div>
+                           <div>
+                             <span className="text-[10px] font-black text-white tracking-widest uppercase italic block leading-none">{s.category}</span>
+                             <span className="text-[8px] font-mono text-text-dim block mt-0.5">SOURCE: {s.metadata?.username || 'EXTERNAL_FEED'}</span>
+                           </div>
                          </div>
-                         <span className="text-[8px] font-mono text-text-dim uppercase tracking-tighter">SIG_ID: {s.id.substring(0,6)}</span>
-                      </div>
-                   </motion.div>
-                 )) : (
+                         <span className="text-[10px] font-mono text-text-dim bg-white/5 px-2 py-1 rounded">{new Date(s.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                       </div>
+                       <p className="text-[14px] text-text-main font-medium leading-relaxed mb-4">{s.content}</p>
+                       <div className="pt-4 border-t border-white/5 flex flex-wrap gap-y-2 items-center justify-between">
+                          <div className="flex items-center gap-3">
+                             <div className="w-16 h-1 bg-white/5 rounded-full overflow-hidden">
+                                <motion.div 
+                                  initial={{ width: 0 }}
+                                  whileInView={{ width: `${s.confidence * 100}%` }}
+                                  className="h-full bg-blue-500" 
+                                />
+                             </div>
+                             <span className="text-[9px] font-black text-blue-500">{(s.confidence * 100).toFixed(0)}% CONF</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-[8px] font-mono text-text-dim uppercase tracking-tighter">{new Date(s.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            {s.metadata?.source_url && (
+                              <a 
+                                href={s.metadata.source_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-blue-400 font-black uppercase text-[8px] bg-blue-500/10 px-2 py-0.5 rounded"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                ORIGIN <ExternalLink size={10} />
+                              </a>
+                            )}
+                          </div>
+                       </div>
+                    </motion.div>
+                  )) : (
                      <div className="h-full flex items-center justify-center p-12 text-center opacity-30 select-none">
                         <div className="space-y-4">
                             <div className="w-16 h-16 border-2 border-dashed border-white/20 rounded-full animate-spin flex items-center justify-center mx-auto">
