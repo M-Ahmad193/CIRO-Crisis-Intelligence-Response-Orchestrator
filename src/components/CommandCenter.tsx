@@ -37,7 +37,39 @@ export default function CommandCenter({ state, traces }: Props) {
   const triggerOsint = async () => {
     setIsFetchingOsint(true);
     try {
-      const res = await fetch('/api/osint', { method: 'POST' });
+      // Try to get user current location first, fallback to map center
+      const getPos = () => new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+      });
+
+      let lat = mapPosition.center[0];
+      let lng = mapPosition.center[1];
+      let name = "Lahore"; // Fallback
+
+      try {
+        const pos = await getPos();
+        lat = pos.coords.latitude;
+        lng = pos.coords.longitude;
+        
+        // Simple reverse geocoding using Nominatim (open)
+        try {
+          const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+          const geoData = await geoRes.json();
+          name = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.state || "Lahore";
+        } catch (ge) {
+          console.error("Geocoding failed", ge);
+        }
+      } catch (e) {
+        console.log("Using map center for OSINT as GPS was unavailable", e);
+      }
+
+      const res = await fetch('/api/osint', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          location: { lat, lng, name } 
+        }) 
+      });
       const data = await res.json();
       console.log('OSINT Result:', data);
     } catch (err) {

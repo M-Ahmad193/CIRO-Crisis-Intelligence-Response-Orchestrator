@@ -4,8 +4,17 @@ import { Signal, SignalCategory } from "./types";
 import { v4 as uuidv4 } from "uuid";
 
 export class NewsApiIngestor {
-  static async fetchRealtimeSignals(query: string = "Lahore emergency OR Lahore crisis OR Lahore accident"): Promise<Signal[]> {
-    console.log(`[OSINT] Initiating NewsAPI fetch. Query: "${query}"`);
+  static async fetchRealtimeSignals(
+    query?: string, 
+    location?: { lat: number; lng: number; name?: string }
+  ): Promise<Signal[]> {
+    const regionName = location?.name || "Lahore";
+    const defaultQuery = `${regionName} emergency OR ${regionName} crisis OR ${regionName} accident`;
+    const finalQuery = query || defaultQuery;
+    const baseLat = location?.lat || 31.5204;
+    const baseLng = location?.lng || 74.3587;
+
+    console.log(`[OSINT] Initiating NewsAPI fetch for region: ${regionName}. Query: "${finalQuery}"`);
     const apiKey = process.env.NEWS_API_KEY;
 
     if (!apiKey) {
@@ -15,11 +24,10 @@ export class NewsApiIngestor {
 
     try {
       const trimmedKey = apiKey.trim();
-      console.log(`[OSINT] Using API Key: ${trimmedKey.substring(0, 4)}...${trimmedKey.substring(trimmedKey.length - 4)}`);
       
       const response = await axios.get(`https://newsapi.org/v2/everything`, {
         params: {
-          q: query,
+          q: finalQuery,
           sortBy: "publishedAt",
           language: "en",
           pageSize: 20,
@@ -28,18 +36,17 @@ export class NewsApiIngestor {
         headers: {
           "User-Agent": "CIRO-Osint-Ingestor/1.0"
         },
-        timeout: 10000 // 10 second timeout
+        timeout: 10000 
       });
 
       console.log(`[OSINT] NewsAPI Response Status: ${response.status}`);
       let articles = response.data.articles || [];
       
-      // Fallback if no results for specific emergency query
-      if (articles.length === 0 && !query.includes("Lahore news")) {
-        console.log("[OSINT] No emergency results found. Falling back to general Lahore news.");
+      if (articles.length === 0 && !finalQuery.includes(`${regionName} news`)) {
+        console.log(`[OSINT] No emergency results found for ${regionName}. Falling back to general news.`);
         const fallbackRes = await axios.get(`https://newsapi.org/v2/everything`, {
           params: {
-            q: "Lahore news",
+            q: `${regionName} news`,
             sortBy: "publishedAt",
             language: "en",
             pageSize: 10,
@@ -66,8 +73,8 @@ export class NewsApiIngestor {
           content: cleanContent,
           category: SignalCategory.SOCIAL_MEDIA,
           location: {
-            lat: 31.5204 + (Math.random() - 0.5) * 0.1,
-            lng: 74.3587 + (Math.random() - 0.5) * 0.1
+            lat: baseLat + (Math.random() - 0.5) * 0.05,
+            lng: baseLng + (Math.random() - 0.5) * 0.05
           },
           confidence: 0.85,
           sourceReliability: 0.9,
@@ -75,7 +82,8 @@ export class NewsApiIngestor {
             username: article.source?.name || "News Outlet",
             source_type: "LIVE_NEWS",
             source_url: article.url,
-            is_valid_url: !!article.url
+            is_valid_url: !!article.url,
+            region: regionName
           }
         };
       });

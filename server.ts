@@ -85,8 +85,8 @@ async function startServer() {
   });
 
   app.post("/api/osint", async (req, res) => {
-    const query = req.body.query || "Lahore emergency OR Lahore crisis OR Lahore accident";
-    console.log(`[ROUTE] /api/osint hit with query: ${query}`);
+    const { query, location } = req.body;
+    console.log(`[ROUTE] /api/osint hit. Location: ${location?.name || "Global"}`);
     
     if (!process.env.NEWS_API_KEY) {
       console.error("[ROUTE] /api/osint failed: NEWS_API_KEY is missing in process.env");
@@ -94,7 +94,7 @@ async function startServer() {
     }
 
     try {
-      const signals = await NewsApiIngestor.fetchRealtimeSignals(query);
+      const signals = await NewsApiIngestor.fetchRealtimeSignals(query, location);
       console.log(`[ROUTE] /api/osint fetched ${signals.length} signals`);
       
       // Ingest signals
@@ -102,7 +102,7 @@ async function startServer() {
         orchestrator.ingestSignal(s);
       });
       
-      res.json({ status: "realtime_osint_ingested", count: signals.length, query });
+      res.json({ status: "realtime_osint_ingested", count: signals.length, query, location });
     } catch (error: any) {
       console.error(`[ROUTE] /api/osint internal error: ${error.message}`);
       res.status(500).json({ status: "error", message: error.message });
